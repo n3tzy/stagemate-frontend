@@ -1,0 +1,451 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
+import 'package:jwt_decoder/jwt_decoder.dart';
+
+// ── 예외 클래스 ──────────────────────────────────────
+class UnauthorizedException implements Exception {
+  final String message;
+  const UnauthorizedException([this.message = '로그인이 만료됐습니다. 다시 로그인해주세요.']);
+  @override
+  String toString() => message;
+}
+
+class ServerException implements Exception {
+  final String message;
+  const ServerException([this.message = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.']);
+  @override
+  String toString() => message;
+}
+
+/// 네트워크/연결 오류를 사용자 친화적인 메시지로 변환
+String friendlyError(Object e) {
+  final msg = e.toString();
+  if (msg.contains('SocketException') ||
+      msg.contains('ClientException') ||
+      msg.contains('Failed host lookup') ||
+      msg.contains('Connection refused') ||
+      msg.contains('TimeoutException') ||
+      msg.contains('Network is unreachable')) {
+    return '서버에 연결을 실패했습니다. 다시 시도해 주세요.';
+  }
+  return msg;
+}
+
+// ── API 클라이언트 ────────────────────────────────────
+class ApiClient {
+  /// 배포 시: flutter build apk --dart-define=API_BASE_URL=https://your-app.railway.app
+  /// 개발 시: http://127.0.0.1:8000 사용
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://stagemate-backend-production.up.railway.app',
+  );
+
+  static const _storage = FlutterSecureStorage();
+  static const _timeout = Duration(seconds: 30);
+
+  // ── 토큰 유효성 (클라이언트 측) ──────────────────────
+  /// JWT payload의 exp 클레임을 확인 (서버 호출 없이 빠른 체크)
+  static bool isTokenExpired(String token) {
+    try {
+      return JwtDecoder.isExpired(token);
+    } catch (_) {
+      return true; // 파싱 실패 → 만료된 것으로 간주
+    }
+  }
+
+  /// 서버에 GET /auth/me 요청으로 토큰 유효성 실제 확인
+  static Future<bool> verifyToken() async {
+    try {
+      final token = await getToken();
+      if (token == null) return false;
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/auth/me'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      return response.statusCode == 200;
+    } catch (_) {
+      return false; // 네트워크 오류 / 타임아웃은 false 처리
+    }
+  }
+
+  // ── 토큰 관리 ──────────────────────────────────────
+  static Future<void> saveToken(String token) async {
+    await _storage.write(key: 'access_token', value: token);
+  }
+
+  static Future<String?> getToken() async {
+    return await _storage.read(key: 'access_token');
+  }
+
+  // ── 유저 정보 관리 ────────────────────────────────
+  static Future<void> saveUserInfo(String displayName, int userId) async {
+    await _storage.write(key: 'display_name', value: displayName);
+    await _storage.write(key: 'user_id', value: userId.toString());
+  }
+
+  static Future<String?> getDisplayName() async {
+    return await _storage.read(key: 'display_name');
+  }
+
+  static Future<int?> getUserId() async {
+    final id = await _storage.read(key: 'user_id');
+    return id != null ? int.tryParse(id) : null;
+  }
+
+  // ── 동아리 정보 관리 ──────────────────────────────
+  static Future<void> setClubInfo(int clubId, String clubName, String role) async {
+    await _storage.write(key: 'club_id', value: clubId.toString());
+    await _storage.write(key: 'club_name', value: clubName);
+    await _storage.write(key: 'role', value: role);
+  }
+
+  static Future<int?> getClubId() async {
+    final v = await _storage.read(key: 'club_id');
+    return v != null ? int.tryParse(v) : null;
+  }
+
+  static Future<String?> getClubName() async {
+    return await _storage.read(key: 'club_name');
+  }
+
+  static Future<String?> getRole() async {
+    return await _storage.read(key: 'role');
+  }
+
+  static Future<void> logout() async {
+    await _storage.deleteAll();
+  }
+
+  // ── 공통 헤더 (토큰 + X-Club-Id 자동 포함) ──────────
+  static Future<Map<String, String>> _headers() async {
+    final token = await getToken();
+    final clubId = await getClubId();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+      if (clubId != null) 'X-Club-Id': clubId.toString(),
+    };
+  }
+
+  /// X-Club-Id 없이 JWT만 포함하는 헤더 (동아리 목록 조회 등)
+  static Future<Map<String, String>> _authOnlyHeaders() async {
+    final token = await getToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  /// 공통 응답 처리: 타임아웃·5xx 예외 발생, 나머지는 JSON 반환
+  static Map<String, dynamic> _parseResponse(http.Response response) {
+    if (response.statusCode >= 500) {
+      throw ServerException();
+    }
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  // ── 인증 API ────────────────────────────────────
+  static Future<Map<String, dynamic>> register({
+    required String username,
+    required String displayName,
+    required String email,
+    required String password,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username,
+        'display_name': displayName,
+        'email': email,
+        'password': password,
+      }),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<bool> checkUsername(String username) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/auth/check-username?username=${Uri.encodeComponent(username)}'),
+    ).timeout(_timeout);
+    final data = _parseResponse(response);
+    return data['available'] as bool;
+  }
+
+  static Future<bool> checkDisplayName(String displayName) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/auth/check-displayname?display_name=${Uri.encodeComponent(displayName)}'),
+    ).timeout(_timeout);
+    final data = _parseResponse(response);
+    return data['available'] as bool;
+  }
+
+  static Future<bool> checkEmail(String email) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/auth/check-email?email=${Uri.encodeComponent(email)}'),
+    ).timeout(_timeout);
+    final data = _parseResponse(response);
+    return data['available'] as bool;
+  }
+
+  static Future<Map<String, dynamic>> forgotPassword(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/forgot-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> login({
+    required String username,
+    required String password,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/login'),
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      // URI 인코딩으로 특수문자 포함 비밀번호 안전 전송
+      body: 'username=${Uri.encodeComponent(username)}&password=${Uri.encodeComponent(password)}',
+    ).timeout(_timeout);
+
+    final data = _parseResponse(response);
+    if (response.statusCode == 200) {
+      await saveToken(data['access_token']);
+      await saveUserInfo(data['display_name'], data['user_id']);
+    }
+    return data;
+  }
+
+  // ── 동아리 API ────────────────────────────────
+  static Future<Map<String, dynamic>> createClub(String name) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs'),
+      headers: await _authOnlyHeaders(),
+      body: jsonEncode({'name': name}),
+    ).timeout(_timeout);
+    final data = _parseResponse(response);
+    if (response.statusCode == 200) {
+      await setClubInfo(data['club_id'], data['club_name'], data['role']);
+    }
+    return data;
+  }
+
+  static Future<Map<String, dynamic>> joinClub(String inviteCode) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/join'),
+      headers: await _authOnlyHeaders(),
+      body: jsonEncode({'invite_code': inviteCode}),
+    ).timeout(_timeout);
+    final data = _parseResponse(response);
+    if (response.statusCode == 200) {
+      await setClubInfo(data['club_id'], data['club_name'], data['role']);
+    }
+    return data;
+  }
+
+  static Future<List<dynamic>> getMyClubs() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/my'),
+      headers: await _authOnlyHeaders(),
+    ).timeout(_timeout);
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> getInviteCode(int clubId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/$clubId/invite-code'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<List<dynamic>> getMembers(int clubId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/$clubId/members'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> resetMemberPassword(
+      int clubId, int userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/$clubId/members/$userId/reset-password'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> kickMember(int clubId, int userId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/clubs/$clubId/members/$userId'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> updateMemberRole(
+      int clubId, int userId, String role) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/clubs/$clubId/members/$userId/role'),
+      headers: await _headers(),
+      body: jsonEncode({'role': role}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  // ── 무대 순서 최적화 ────────────────────────────
+  static Future<Map<String, dynamic>> createSchedule(
+      Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/schedule'),
+      headers: await _headers(),
+      body: jsonEncode(data),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  // ── 공지사항 ────────────────────────────────────
+  static Future<List<dynamic>> getNotices() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/notices'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> getNotice(int id) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/notices/$id'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> createNotice({
+    required String title,
+    required String content,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/notices'),
+      headers: await _headers(),
+      body: jsonEncode({'title': title, 'content': content}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> deleteNotice(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/notices/$id'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  // ── 계정 관리 ──────────────────────────────────
+  static Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/auth/change-password'),
+      headers: await _authOnlyHeaders(),
+      body: jsonEncode({
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      }),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> deleteAccount() async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/auth/me'),
+      headers: await _authOnlyHeaders(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  // ── 가능 시간 ──────────────────────────────────
+  static Future<Map<String, dynamic>> saveAvailability({
+    required String roomCode,
+    required String day,
+    required double startTime,
+    required double endTime,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/availability'),
+      headers: await _headers(),
+      body: jsonEncode({
+        'room_code': roomCode,
+        'day': day,
+        'start_time': startTime,
+        'end_time': endTime,
+      }),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> getAvailability(String roomCode) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/availability/$roomCode'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> deleteAvailability(int slotId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/availability/$slotId'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> getGroupSchedule(
+      String roomCode, double durationNeeded) async {
+    final response = await http.post(
+      Uri.parse(
+          '$baseUrl/group-schedule/$roomCode?duration_needed=$durationNeeded'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  // ── 연습실 예약 ─────────────────────────────────
+  static Future<Map<String, dynamic>> createBooking(
+      Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/booking'),
+      headers: await _headers(),
+      body: jsonEncode(data),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> getBookings(String date) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/booking/$date'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> deleteBooking(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/booking/$id'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+}
