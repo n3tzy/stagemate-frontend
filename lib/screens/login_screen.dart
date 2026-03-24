@@ -214,9 +214,15 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
       } else {
-        _showError(data['detail'] ?? '카카오 로그인 실패');
+        _showError('카카오 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       }
     } catch (e) {
+      final msg = e.toString().toLowerCase();
+      // 사용자가 직접 취소한 경우 에러 메시지 표시 안 함
+      if (msg.contains('canceled') || msg.contains('cancel') || msg.contains('user_cancelled') ||
+          msg.contains('webauthnticationsession error 1') || msg.contains('error 1')) {
+        return;
+      }
       _showError(friendlyError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);

@@ -35,6 +35,17 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
+      builder: (context, child) {
+        final width = MediaQuery.of(context).size.width;
+        // 태블릿(600px 이상)은 텍스트 1.25배, 대형 태블릿(900px 이상)은 1.4배
+        final textScale = width >= 900 ? 1.4 : (width >= 600 ? 1.25 : 1.0);
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(textScale),
+          ),
+          child: child!,
+        );
+      },
       home: const SplashScreen(),
     );
   }

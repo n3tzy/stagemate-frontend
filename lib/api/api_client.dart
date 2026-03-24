@@ -30,7 +30,16 @@ String friendlyError(Object e) {
       msg.contains('Network is unreachable')) {
     return '서버에 연결을 실패했습니다. 다시 시도해 주세요.';
   }
-  return msg;
+  if (msg.contains('kakao') ||
+      msg.contains('Kakao') ||
+      msg.contains('invalid_request') ||
+      msg.contains('bundleId') ||
+      msg.contains('KakaoException') ||
+      msg.contains('KakaoApiException') ||
+      msg.contains('KakaoAuthException')) {
+    return '카카오 로그인에 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+  }
+  return '오류가 발생했습니다. 잠시 후 다시 시도해 주세요.';
 }
 
 // ── API 클라이언트 ────────────────────────────────────
@@ -362,6 +371,33 @@ class ApiClient {
   static Future<Map<String, dynamic>> deleteNotice(int id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/notices/$id'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  // ── 댓글 API ────────────────────────────────────
+  static Future<List<dynamic>> getComments(int noticeId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/notices/$noticeId/comments'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> createComment(int noticeId, String content) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/notices/$noticeId/comments'),
+      headers: await _headers(),
+      body: jsonEncode({'content': content}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> deleteComment(int noticeId, int commentId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/notices/$noticeId/comments/$commentId'),
       headers: await _headers(),
     ).timeout(_timeout);
     return _parseResponse(response);

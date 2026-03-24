@@ -12,102 +12,114 @@ class ClubOnboardingScreen extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('🎭', style: TextStyle(fontSize: 64), textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              Text(
-                '동아리에 참여하세요',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom,
+            ),
+            child: IntrinsicHeight(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('🎭', style: TextStyle(fontSize: 64), textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    Text(
+                      '동아리에 참여하세요',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                      textAlign: TextAlign.center,
                     ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '새 동아리를 만들거나\n초대 코드로 기존 동아리에 참가하세요',
-                style: TextStyle(color: colorScheme.outline),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 48),
+                    const SizedBox(height: 8),
+                    Text(
+                      '새 동아리를 만들거나\n초대 코드로 기존 동아리에 참가하세요',
+                      style: TextStyle(color: colorScheme.outline),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 48),
 
-              // 동아리 만들기
-              Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ClubCreateScreen()),
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        Icon(Icons.add_circle_outline,
-                            size: 48, color: colorScheme.primary),
-                        const SizedBox(height: 12),
-                        Text(
-                          '동아리 만들기',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                    // 동아리 만들기
+                    Card(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ClubCreateScreen()),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            children: [
+                              Icon(Icons.add_circle_outline,
+                                  size: 48, color: colorScheme.primary),
+                              const SizedBox(height: 12),
+                              Text(
+                                '동아리 만들기',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '새 동아리를 개설하고 회장이 되세요',
+                                style: TextStyle(
+                                    color: colorScheme.outline, fontSize: 13),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '새 동아리를 개설하고 회장이 되세요',
-                          style: TextStyle(
-                              color: colorScheme.outline, fontSize: 13),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 16),
+
+                    // 초대 코드로 참가
+                    Card(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ClubJoinScreen()),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            children: [
+                              Icon(Icons.group_add,
+                                  size: 48, color: colorScheme.secondary),
+                              const SizedBox(height: 12),
+                              Text(
+                                '초대 코드로 참가',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '동아리장에게 받은 코드로 참가하세요',
+                                style: TextStyle(
+                                    color: colorScheme.outline, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // 초대 코드로 참가
-              Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ClubJoinScreen()),
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        Icon(Icons.group_add,
-                            size: 48, color: colorScheme.secondary),
-                        const SizedBox(height: 12),
-                        Text(
-                          '초대 코드로 참가',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '동아리장에게 받은 코드로 참가하세요',
-                          style: TextStyle(
-                              color: colorScheme.outline, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
