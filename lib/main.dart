@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/club_onboarding_screen.dart';
 import 'api/api_client.dart';
 
 void main() {
+  KakaoSdk.init(nativeAppKey: 'KAKAO_KEY_REDACTED');
   runApp(const MyApp());
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import '../api/api_client.dart';
 import 'club_onboarding_screen.dart';
 import 'home_screen.dart';
@@ -175,6 +176,53 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _kakaoLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      OAuthToken token;
+      if (await isKakaoTalkInstalled()) {
+        token = await UserApi.instance.loginWithKakaoTalk();
+      } else {
+        token = await UserApi.instance.loginWithKakaoAccount();
+      }
+
+      final data = await ApiClient.kakaoLogin(token.accessToken);
+      if (!mounted) return;
+
+      if (data.containsKey('access_token')) {
+        final clubs = await ApiClient.getMyClubs();
+        if (!mounted) return;
+
+        if (clubs.isEmpty) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ClubOnboardingScreen()),
+          );
+        } else {
+          final club = clubs[0];
+          await ApiClient.setClubInfo(club['club_id'], club['club_name'], club['role']);
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HomeScreen(
+                displayName: data['display_name'],
+                role: club['role'],
+                clubName: club['club_name'],
+              ),
+            ),
+          );
+        }
+      } else {
+        _showError(data['detail'] ?? '카카오 로그인 실패');
+      }
+    } catch (e) {
+      _showError(friendlyError(e));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -245,6 +293,39 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Text('로그인', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: Divider(color: colorScheme.outlineVariant)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text('또는', style: TextStyle(color: colorScheme.outline, fontSize: 12)),
+                  ),
+                  Expanded(child: Divider(color: colorScheme.outlineVariant)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : _kakaoLogin,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    backgroundColor: const Color(0xFFFEE500),
+                    foregroundColor: const Color(0xFF191919),
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('💬', style: TextStyle(fontSize: 18)),
+                      SizedBox(width: 8),
+                      Text('카카오로 시작하기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 8),

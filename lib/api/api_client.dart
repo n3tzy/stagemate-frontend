@@ -204,6 +204,21 @@ class ApiClient {
     return _parseResponse(response);
   }
 
+  static Future<Map<String, dynamic>> kakaoLogin(String kakaoAccessToken) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/kakao'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'access_token': kakaoAccessToken}),
+    ).timeout(_timeout);
+
+    final data = _parseResponse(response);
+    if (response.statusCode == 200) {
+      await saveToken(data['access_token']);
+      await saveUserInfo(data['display_name'], data['user_id']);
+    }
+    return data;
+  }
+
   static Future<Map<String, dynamic>> login({
     required String username,
     required String password,
