@@ -370,6 +370,12 @@ class _GroupScreenState extends State<GroupScreen> {
                               hintText: '예: DANCE2026',
                               border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.tag),
+                              suffixIcon: Tooltip(
+                                message: '방 코드는 팀 단위 코드예요.\n같은 팀원끼리 동일한 코드를 입력하면\n팀 스케줄을 함께 조율할 수 있어요.',
+                                triggerMode: TooltipTriggerMode.tap,
+                                showDuration: Duration(seconds: 5),
+                                child: Icon(Icons.info_outline),
+                              ),
                             ),
                           ),
                         ),

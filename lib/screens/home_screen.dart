@@ -7,6 +7,8 @@ import 'club_manage_screen.dart';
 import 'club_onboarding_screen.dart';
 import 'login_screen.dart';
 import '../api/api_client.dart';
+import 'feed_screen.dart';
+import 'my_activity_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String displayName;
@@ -37,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> get _screens {
     return [
       const NoticeScreen(),
+      const FeedScreen(),
       if (_canOptimizeSchedule) const ScheduleScreen(),
       const GroupScreen(),
       const BookingScreen(),
@@ -49,6 +52,10 @@ class _HomeScreenState extends State<HomeScreen> {
       const NavigationDestination(
         icon: Icon(Icons.campaign),
         label: '공지사항',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.dynamic_feed),
+        label: '피드',
       ),
       if (_canOptimizeSchedule)
         const NavigationDestination(
@@ -136,6 +143,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   isCreator: widget.role == 'super_admin',
                   clubName: widget.clubName,
                   role: widget.role,
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('내 게시글 · 댓글'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyActivityScreen()),
                 );
               },
             ),
@@ -277,43 +296,105 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showDeleteAccountDialog() {
+    // 카카오 유저 여부 확인 (나중에 실제로는 저장된 값으로 판단)
+    // 여기서는 hashed_password 없는 카카오 유저의 경우 API 에러로 구분
+    final passwordCtrl = TextEditingController();
+    final confirmTextCtrl = TextEditingController();
+    bool isLoading = false;
+    bool isKakaoUser = false; // 기본값; 첫 시도 실패 시 카카오 모드로 전환 가능
+
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('정말 탈퇴하시겠어요?'),
-        content: const Text(
-          '탈퇴하면 계정과 등록한 모든 데이터(가능 시간, 예약 등)가 삭제되며\n복구할 수 없어요.',
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('정말 탈퇴하시겠어요?'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '탈퇴하면 계정과 모든 데이터가 삭제되며 복구할 수 없어요.\n탈퇴 후 7일간 재가입이 불가합니다.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                if (!isKakaoUser) ...[
+                  TextField(
+                    controller: passwordCtrl,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: '비밀번호 확인',
+                      prefixIcon: Icon(Icons.lock_outline),
+                      border: OutlineInputBorder(),
+                      hintText: '현재 비밀번호를 입력하세요',
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => setDialogState(() => isKakaoUser = true),
+                    child: const Text('카카오로 가입했어요', style: TextStyle(fontSize: 12)),
+                  ),
+                ] else ...[
+                  Text(
+                    '카카오 계정 탈퇴를 진행합니다.\n아래에 "탈퇴합니다"를 정확히 입력해주세요.',
+                    style: TextStyle(fontSize: 13, color: Colors.orange.shade700),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: confirmTextCtrl,
+                    decoration: const InputDecoration(
+                      labelText: '탈퇴합니다',
+                      border: OutlineInputBorder(),
+                      hintText: '탈퇴합니다',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      setDialogState(() => isLoading = true);
+                      try {
+                        await ApiClient.deleteAccount(
+                          password: isKakaoUser ? null : passwordCtrl.text,
+                          confirmText: isKakaoUser ? confirmTextCtrl.text : null,
+                        );
+                        await ApiClient.logout();
+                        if (!mounted) return;
+                        Navigator.pop(dialogCtx);
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          (route) => false,
+                        );
+                      } catch (e) {
+                        setDialogState(() => isLoading = false);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(friendlyError(e)),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('탈퇴하기'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-            onPressed: () async {
-              Navigator.pop(dialogCtx);
-              try {
-                await ApiClient.deleteAccount();
-                await ApiClient.logout();
-                if (mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('탈퇴 실패: $e'), backgroundColor: Colors.red),
-                  );
-                }
-              }
-            },
-            child: const Text('탈퇴하기'),
-          ),
-        ],
       ),
     );
   }

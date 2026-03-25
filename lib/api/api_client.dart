@@ -419,10 +419,17 @@ class ApiClient {
     return _parseResponse(response);
   }
 
-  static Future<Map<String, dynamic>> deleteAccount() async {
+  static Future<Map<String, dynamic>> deleteAccount({
+    String? password,
+    String? confirmText,
+  }) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/auth/me'),
       headers: await _authOnlyHeaders(),
+      body: jsonEncode({
+        if (password != null) 'password': password,
+        if (confirmText != null) 'confirm_text': confirmText,
+      }),
     ).timeout(_timeout);
     return _parseResponse(response);
   }
@@ -495,6 +502,100 @@ class ApiClient {
   static Future<Map<String, dynamic>> deleteBooking(int id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/booking/$id'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  // ── 게시판 API ────────────────────────────────────
+  static Future<List<dynamic>> getPosts({bool isGlobal = false, int offset = 0}) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/posts?is_global=$isGlobal&offset=$offset&limit=20'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> createPost({
+    required String content,
+    List<String> mediaUrls = const [],
+    bool isGlobal = false,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/posts'),
+      headers: await _headers(),
+      body: jsonEncode({
+        'content': content,
+        'media_urls': mediaUrls,
+        'is_global': isGlobal,
+      }),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> deletePost(int postId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/posts/$postId'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> togglePostLike(int postId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/posts/$postId/likes'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<List<dynamic>> getPostComments(int postId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/posts/$postId/comments'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> createPostComment(int postId, String content) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/posts/$postId/comments'),
+      headers: await _headers(),
+      body: jsonEncode({'content': content}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> deletePostComment(int postId, int commentId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/posts/$postId/comments/$commentId'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<List<dynamic>> getHotClubs() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/hot-ranking'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> getMyActivity() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/users/me/activity'),
+      headers: await _authOnlyHeaders(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> getPresignedUrl(String filename, String contentType) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/upload/presigned?filename=${Uri.encodeComponent(filename)}&content_type=${Uri.encodeComponent(contentType)}'),
       headers: await _headers(),
     ).timeout(_timeout);
     return _parseResponse(response);

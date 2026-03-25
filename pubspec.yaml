@@ -43,6 +43,9 @@ dependencies:
   flutter_secure_storage: ^9.0.0  # ← 추가
   jwt_decoder: ^2.0.0             # ← 클라이언트 측 토큰 만료 사전 체크
   kakao_flutter_sdk_user: ^1.9.7  # ← 카카오 소셜 로그인
+  image_picker: ^1.1.2       # 갤러리/카메라에서 이미지/영상 선택
+  video_player: ^2.9.1       # 영상 미리보기
+  cached_network_image: ^3.4.1  # 이미지 캐싱
 
 dev_dependencies:
   flutter_test:
