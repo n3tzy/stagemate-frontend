@@ -212,26 +212,45 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
               if (mediaUrls.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 SizedBox(
-                  height: 80,
+                  height: 160,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: mediaUrls.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 6),
-                    itemBuilder: (_, i) => ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        mediaUrls[i],
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 80,
-                          height: 80,
-                          color: colorScheme.surfaceContainerHighest,
-                          child: Icon(Icons.broken_image, color: colorScheme.outline),
-                        ),
-                      ),
-                    ),
+                    itemBuilder: (_, i) {
+                      final url = mediaUrls[i] as String;
+                      final lower = url.toLowerCase();
+                      final isVideo = lower.contains('.mp4') ||
+                          lower.contains('.mov') ||
+                          lower.contains('.avi') ||
+                          lower.contains('.webm');
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: isVideo
+                            ? Container(
+                                width: 160,
+                                height: 160,
+                                color: Colors.black87,
+                                child: const Icon(
+                                  Icons.play_circle_fill,
+                                  color: Colors.white,
+                                  size: 48,
+                                ),
+                              )
+                            : Image.network(
+                                url,
+                                width: 160,
+                                height: 160,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: 160,
+                                  height: 160,
+                                  color: colorScheme.surfaceContainerHighest,
+                                  child: Icon(Icons.broken_image, color: colorScheme.outline),
+                                ),
+                              ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -399,7 +418,11 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
               builder: (_) => PostCreateScreen(isGlobal: isGlobal),
             ),
           );
-          if (result == true) await _loadAll();
+          if (result != null) {
+            await _loadAll();
+            // 작성한 게시글 탭으로 이동 (true=전체커뮤니티, false=우리동아리)
+            _tabController.animateTo(result ? 1 : 0);
+          }
         },
         tooltip: '게시글 작성',
         child: const Icon(Icons.edit),
@@ -512,17 +535,78 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          // 게시글 요약
+          // 게시글 전체 내용
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text(
-              widget.post['content'] ?? '',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: colorScheme.outline, fontSize: 13),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: colorScheme.primaryContainer,
+                      child: Text(
+                        (widget.post['author'] as String? ?? '?').isNotEmpty
+                            ? (widget.post['author'] as String)[0]
+                            : '?',
+                        style: TextStyle(fontSize: 12, color: colorScheme.onPrimaryContainer),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.post['author'] ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        Text(
+                          widget.post['created_at'] ?? '',
+                          style: TextStyle(fontSize: 11, color: colorScheme.outline),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(widget.post['content'] ?? '', style: const TextStyle(fontSize: 14, height: 1.5)),
+                if ((widget.post['media_urls'] as List? ?? []).isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 160,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: (widget.post['media_urls'] as List).length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 6),
+                      itemBuilder: (_, i) {
+                        final url = (widget.post['media_urls'] as List)[i] as String;
+                        final isVideo = url.toLowerCase().contains('.mp4') ||
+                            url.toLowerCase().contains('.mov') ||
+                            url.toLowerCase().contains('.avi');
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: isVideo
+                              ? Container(
+                                  width: 160,
+                                  height: 160,
+                                  color: Colors.black87,
+                                  child: const Icon(Icons.play_circle_fill, color: Colors.white, size: 48),
+                                )
+                              : Image.network(url, width: 160, height: 160, fit: BoxFit.cover),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           Divider(color: colorScheme.outlineVariant),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text('댓글', style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.outline, fontSize: 13)),
+          ),
           // 댓글 목록
           Expanded(
             child: _loading

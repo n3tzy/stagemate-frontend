@@ -107,10 +107,21 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
     for (final file in _selectedFiles) {
       try {
         final filename = file.name;
-        final isVideo = filename.endsWith('.mp4') ||
-            filename.endsWith('.mov') ||
-            filename.endsWith('.avi');
-        final contentType = isVideo ? 'video/mp4' : 'image/jpeg';
+        final lower = filename.toLowerCase();
+        final contentType = lower.endsWith('.mp4')
+            ? 'video/mp4'
+            : lower.endsWith('.mov')
+                ? 'video/quicktime'
+                : lower.endsWith('.avi')
+                    ? 'video/x-msvideo'
+                    : lower.endsWith('.png')
+                        ? 'image/png'
+                        : lower.endsWith('.gif')
+                            ? 'image/gif'
+                            : lower.endsWith('.webp')
+                                ? 'image/webp'
+                                : 'image/jpeg';
+        final isVideo = lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.avi');
 
         final presigned = await ApiClient.getPresignedUrl(filename, contentType);
         final uploadUrl = presigned['upload_url'] as String;
@@ -154,7 +165,7 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
         isGlobal: _isGlobal,
       );
 
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, _isGlobal);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -252,16 +263,26 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
                   scrollDirection: Axis.horizontal,
                   itemCount: _selectedFiles.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (_, i) => Stack(
+                  itemBuilder: (_, i) {
+                    final name = _selectedFiles[i].name.toLowerCase();
+                    final isVid = name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.avi');
+                    return Stack(
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          File(_selectedFiles[i].path),
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
+                        child: isVid
+                            ? Container(
+                                width: 100,
+                                height: 100,
+                                color: Colors.black87,
+                                child: const Icon(Icons.play_circle_fill, color: Colors.white, size: 40),
+                              )
+                            : Image.file(
+                                File(_selectedFiles[i].path),
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                              ),
                       ),
                       Positioned(
                         top: 2,
@@ -283,7 +304,7 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
                         ),
                       ),
                     ],
-                  ),
+                  );},
                 ),
               ),
             ],
