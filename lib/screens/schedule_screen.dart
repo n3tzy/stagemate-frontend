@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../utils/excel_exporter.dart';
@@ -50,100 +51,202 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }).toList();
   }
 
+  // ── 시간 선택 바텀시트 ─────────────────────
+  Future<void> _pickDuration({
+    required BuildContext sheetCtx,
+    required int initMin,
+    required int initSec,
+    required String label,
+    required void Function(int m, int s) onPicked,
+  }) async {
+    int selMin = initMin;
+    int selSec = initSec;
+    await showModalBottomSheet(
+      context: sheetCtx,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (bsCtx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 4),
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+            SizedBox(
+              height: 180,
+              child: CupertinoTimerPicker(
+                mode: CupertinoTimerPickerMode.ms,
+                initialTimerDuration: Duration(minutes: initMin, seconds: initSec),
+                onTimerDurationChanged: (d) {
+                  selMin = d.inMinutes;
+                  selSec = d.inSeconds % 60;
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    onPicked(selMin, selSec);
+                    Navigator.pop(bsCtx);
+                  },
+                  child: const Text('확인'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── 곡 추가 다이얼로그 ──────────────────
   Future<void> _showAddSongDialog() async {
     final titleController = TextEditingController();
     final membersController = TextEditingController();
-    final durationController = TextEditingController(text: '4.5');
-    final introController = TextEditingController(text: '1.5');
+    int durationMin = 4;
+    int durationSec = 30;
+    int introMin = 1;
+    int introSec = 30;
+
+    String fmtPick(int m, int s) => s == 0 ? '$m분' : '$m분 ${s}초';
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('곡 추가'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: '곡 제목',
-                  hintText: '예: Dynamite',
-                  border: OutlineInputBorder(),
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('곡 추가'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(
+                    labelText: '곡 제목',
+                    hintText: '예: Dynamite',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: membersController,
-                decoration: const InputDecoration(
-                  labelText: '참여 멤버',
-                  hintText: '쉼표로 구분: 민수, 지혜, 현아',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: membersController,
+                  decoration: const InputDecoration(
+                    labelText: '참여 멤버',
+                    hintText: '쉼표로 구분: 민수, 지혜, 현아',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: durationController,
-                decoration: const InputDecoration(
-                  labelText: '곡 길이',
-                  hintText: '예: 4.5',
-                  border: OutlineInputBorder(),
-                  helperText: '소수점으로 입력 · 4.5 = 4분 30초, 3.0 = 3분',
+                const SizedBox(height: 12),
+                // ── 곡 길이 드럼롤 피커 ──
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () async {
+                    await _pickDuration(
+                      sheetCtx: ctx,
+                      initMin: durationMin,
+                      initSec: durationSec,
+                      label: '곡 길이',
+                      onPicked: (m, s) => setDialogState(() {
+                        durationMin = m;
+                        durationSec = s;
+                      }),
+                    );
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: '곡 길이',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.expand_more),
+                    ),
+                    child: Text(
+                      fmtPick(durationMin, durationSec),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                  ),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: introController,
-                decoration: const InputDecoration(
-                  labelText: '무대 소개 시간',
-                  hintText: '예: 1.5',
-                  border: OutlineInputBorder(),
-                  helperText: '0 = 소개 없음 · 1.5 = 1분 30초 (일반 소개)',
+                const SizedBox(height: 12),
+                // ── 무대 소개 시간 드럼롤 피커 ──
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () async {
+                    await _pickDuration(
+                      sheetCtx: ctx,
+                      initMin: introMin,
+                      initSec: introSec,
+                      label: '무대 소개 시간',
+                      onPicked: (m, s) => setDialogState(() {
+                        introMin = m;
+                        introSec = s;
+                      }),
+                    );
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: '무대 소개 시간',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.expand_more),
+                    ),
+                    child: Text(
+                      fmtPick(introMin, introSec),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                  ),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final title = titleController.text.trim();
-              final membersRaw = membersController.text.trim();
-              final duration =
-                  double.tryParse(durationController.text.trim()) ?? 4.5;
-              final introTime =
-                  double.tryParse(introController.text.trim()) ?? 1.5;
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final title = titleController.text.trim();
+                final membersRaw = membersController.text.trim();
+                if (title.isEmpty || membersRaw.isEmpty) return;
 
-              if (title.isEmpty || membersRaw.isEmpty) return;
+                final duration = durationMin + durationSec / 60.0;
+                final introTime = introMin + introSec / 60.0;
 
-              final members = membersRaw
-                  .split(',')
-                  .map((m) => m.trim())
-                  .where((m) => m.isNotEmpty)
-                  .toList();
+                final members = membersRaw
+                    .split(',')
+                    .map((m) => m.trim())
+                    .where((m) => m.isNotEmpty)
+                    .toList();
 
-              setState(() {
-                _songs.add({
-                  'id': _nextId++,
-                  'title': title,
-                  'members': members,
-                  'duration': duration,
-                  'intro_time': introTime,
+                setState(() {
+                  _songs.add({
+                    'id': _nextId++,
+                    'title': title,
+                    'members': members,
+                    'duration': duration,
+                    'intro_time': introTime,
+                  });
+                  _result = null;
                 });
-                _result = null;
-              });
-              Navigator.pop(context);
-            },
-            child: const Text('추가'),
-          ),
-        ],
+                Navigator.pop(dialogCtx);
+              },
+              child: const Text('추가'),
+            ),
+          ],
+        ),
       ),
     );
   }
