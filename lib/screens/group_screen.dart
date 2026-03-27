@@ -16,6 +16,7 @@ class _GroupScreenState extends State<GroupScreen> {
   // { '민수': [ {'id':1,'day':'화','start':14.0,'end':20.0} ] }
   Map<String, List<dynamic>> _memberSlots = {};
   String _myDisplayName = '';
+  // ignore: unused_field
   int? _myUserId;
 
   Map<String, dynamic>? _result;
