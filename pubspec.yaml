@@ -46,6 +46,7 @@ dependencies:
   image_picker: ^1.1.2       # 갤러리/카메라에서 이미지/영상 선택
   video_player: ^2.9.1       # 영상 미리보기
   cached_network_image: ^3.4.1  # 이미지 캐싱
+  video_thumbnail: ^0.5.6
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,7 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import '../api/api_client.dart';
 import 'post_create_screen.dart';
 
@@ -712,55 +714,116 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 }
 
 // ── 미디어 썸네일 (사진/영상 공통) ────────────────────
-class _MediaThumbnail extends StatelessWidget {
+class _MediaThumbnail extends StatefulWidget {
   final String url;
   final double size;
 
   const _MediaThumbnail({required this.url, this.size = 160});
 
-  static bool _isVideo(String u) {
+  static bool isVideo(String u) {
     final l = u.toLowerCase();
     return l.contains('.mp4') || l.contains('.mov') ||
            l.contains('.avi') || l.contains('.webm');
   }
 
   @override
+  State<_MediaThumbnail> createState() => _MediaThumbnailState();
+}
+
+class _MediaThumbnailState extends State<_MediaThumbnail> {
+  Uint8List? _thumbData;
+  bool _thumbError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_MediaThumbnail.isVideo(widget.url)) {
+      _loadThumb();
+    }
+  }
+
+  Future<void> _loadThumb() async {
+    try {
+      final data = await VideoThumbnail.thumbnailData(
+        video: widget.url,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: widget.size.toInt() * 2, // 레티나 대응
+        quality: 70,
+      );
+      if (mounted) setState(() => _thumbData = data);
+    } catch (_) {
+      if (mounted) setState(() => _thumbError = true);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final video = _isVideo(url);
+    final isVid = _MediaThumbnail.isVideo(widget.url);
+    final sz = widget.size;
+
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => video
-              ? _VideoPlayerScreen(url: url)
-              : _PhotoViewScreen(url: url),
+          builder: (_) => isVid
+              ? _VideoPlayerScreen(url: widget.url)
+              : _PhotoViewScreen(url: widget.url),
         ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: video
-            ? Container(
-                width: size,
-                height: size,
-                color: Colors.black87,
-                child: const Icon(Icons.play_circle_fill, color: Colors.white, size: 48),
+        child: isVid
+            ? Stack(
+                children: [
+                  // 썸네일 or 플레이스홀더
+                  _thumbData != null
+                      ? Image.memory(
+                          _thumbData!,
+                          width: sz, height: sz,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          width: sz, height: sz,
+                          color: Colors.black87,
+                          child: _thumbError
+                              ? const Icon(Icons.videocam, color: Colors.white38, size: 36)
+                              : const Center(
+                                  child: SizedBox(
+                                    width: 24, height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white54, strokeWidth: 2,
+                                    ),
+                                  ),
+                                ),
+                        ),
+                  // 재생 아이콘 오버레이
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black26,
+                      child: const Icon(
+                        Icons.play_circle_fill,
+                        color: Colors.white,
+                        size: 44,
+                      ),
+                    ),
+                  ),
+                ],
               )
             : Image.network(
-                url,
-                width: size,
-                height: size,
+                widget.url,
+                width: sz, height: sz,
                 fit: BoxFit.cover,
                 loadingBuilder: (_, child, progress) => progress == null
                     ? child
                     : Container(
-                        width: size,
-                        height: size,
+                        width: sz, height: sz,
                         color: Colors.grey.shade200,
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                       ),
                 errorBuilder: (_, __, ___) => Container(
-                  width: size,
-                  height: size,
+                  width: sz, height: sz,
                   color: Colors.grey.shade200,
                   child: const Icon(Icons.broken_image, color: Colors.grey),
                 ),
