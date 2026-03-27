@@ -521,6 +521,7 @@ class ApiClient {
     required String content,
     List<String> mediaUrls = const [],
     bool isGlobal = false,
+    bool isAnonymous = false,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/posts'),
@@ -529,7 +530,17 @@ class ApiClient {
         'content': content,
         'media_urls': mediaUrls,
         'is_global': isGlobal,
+        'is_anonymous': isAnonymous,
       }),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> updateNickname(String nickname) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/auth/nickname'),
+      headers: await _headers(),
+      body: jsonEncode({'nickname': nickname}),
     ).timeout(_timeout);
     return _parseResponse(response);
   }

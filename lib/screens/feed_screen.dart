@@ -285,6 +285,13 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                     '${post['comment_count'] ?? 0}',
                     style: TextStyle(fontSize: 13, color: colorScheme.outline),
                   ),
+                  const SizedBox(width: 16),
+                  Icon(Icons.visibility_outlined, size: 16, color: colorScheme.outline),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${post['view_count'] ?? 0}',
+                    style: TextStyle(fontSize: 13, color: colorScheme.outline),
+                  ),
                 ],
               ),
             ],

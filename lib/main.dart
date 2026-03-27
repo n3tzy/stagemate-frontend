@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
       ],
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6750A4),
+          seedColor: const Color(0xFF7DB96B), // 피스타치오 그린
           brightness: Brightness.light,
         ),
         useMaterial3: true,

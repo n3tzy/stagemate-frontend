@@ -159,6 +159,16 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.badge_outlined),
+              title: const Text('커뮤니티 닉네임 설정'),
+              subtitle: const Text('전체 커뮤니티 글에 사용되는 닉네임'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _showNicknameDialog();
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.lock_reset),
               title: const Text('비밀번호 변경'),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -288,6 +298,78 @@ class _HomeScreenState extends State<HomeScreen> {
               child: isLoading
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('변경'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNicknameDialog() {
+    final nicknameCtrl = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('커뮤니티 닉네임 설정'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '전체 커뮤니티 게시글에 표시되는 닉네임이에요.\n설정하지 않으면 실명이 사용됩니다.',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: nicknameCtrl,
+                maxLength: 20,
+                decoration: const InputDecoration(
+                  labelText: '닉네임',
+                  hintText: '1~20자',
+                  prefixIcon: Icon(Icons.badge_outlined),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final nickname = nicknameCtrl.text.trim();
+                      if (nickname.isEmpty) return;
+                      setDialogState(() => isLoading = true);
+                      try {
+                        final result = await ApiClient.updateNickname(nickname);
+                        if (!mounted) return;
+                        Navigator.pop(dialogCtx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(result['message'] ?? result['detail'] ?? '닉네임이 설정됐어요.'),
+                            backgroundColor: result.containsKey('message') ? Colors.green : Colors.red,
+                          ),
+                        );
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+                          );
+                        }
+                      } finally {
+                        setDialogState(() => isLoading = false);
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('저장'),
             ),
           ],
         ),

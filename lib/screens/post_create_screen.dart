@@ -19,6 +19,7 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
   List<XFile> _selectedFiles = [];
   bool _isSubmitting = false;
   bool _isGlobal = false;
+  bool _isAnonymous = false;
 
   @override
   void initState() {
@@ -163,6 +164,7 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
         content: content,
         mediaUrls: mediaUrls,
         isGlobal: _isGlobal,
+        isAnonymous: _isAnonymous,
       );
 
       if (mounted) Navigator.pop(context, _isGlobal);
@@ -211,20 +213,45 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
           children: [
             // 채널 선택
             Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    const Icon(Icons.public),
-                    const SizedBox(width: 12),
-                    const Text('전체 커뮤니티에 공개'),
-                    const Spacer(),
-                    Switch(
-                      value: _isGlobal,
-                      onChanged: (v) => setState(() => _isGlobal = v),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.public),
+                        const SizedBox(width: 12),
+                        const Text('전체 커뮤니티에 공개'),
+                        const Spacer(),
+                        Switch(
+                          value: _isGlobal,
+                          onChanged: (v) => setState(() {
+                            _isGlobal = v;
+                            if (!v) _isAnonymous = false;
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_isGlobal) ...[
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.visibility_off_outlined),
+                          const SizedBox(width: 12),
+                          const Text('익명으로 게시'),
+                          const Spacer(),
+                          Switch(
+                            value: _isAnonymous,
+                            onChanged: (v) => setState(() => _isAnonymous = v),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
