@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../api/api_client.dart';
 import 'post_create_screen.dart';
 
@@ -217,40 +218,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                     scrollDirection: Axis.horizontal,
                     itemCount: mediaUrls.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 6),
-                    itemBuilder: (_, i) {
-                      final url = mediaUrls[i] as String;
-                      final lower = url.toLowerCase();
-                      final isVideo = lower.contains('.mp4') ||
-                          lower.contains('.mov') ||
-                          lower.contains('.avi') ||
-                          lower.contains('.webm');
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: isVideo
-                            ? Container(
-                                width: 160,
-                                height: 160,
-                                color: Colors.black87,
-                                child: const Icon(
-                                  Icons.play_circle_fill,
-                                  color: Colors.white,
-                                  size: 48,
-                                ),
-                              )
-                            : Image.network(
-                                url,
-                                width: 160,
-                                height: 160,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  width: 160,
-                                  height: 160,
-                                  color: colorScheme.surfaceContainerHighest,
-                                  child: Icon(Icons.broken_image, color: colorScheme.outline),
-                                ),
-                              ),
-                      );
-                    },
+                    itemBuilder: (_, i) => _MediaThumbnail(url: mediaUrls[i] as String),
                   ),
                 ),
               ],
@@ -586,23 +554,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                       scrollDirection: Axis.horizontal,
                       itemCount: (widget.post['media_urls'] as List).length,
                       separatorBuilder: (_, __) => const SizedBox(width: 6),
-                      itemBuilder: (_, i) {
-                        final url = (widget.post['media_urls'] as List)[i] as String;
-                        final isVideo = url.toLowerCase().contains('.mp4') ||
-                            url.toLowerCase().contains('.mov') ||
-                            url.toLowerCase().contains('.avi');
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: isVideo
-                              ? Container(
-                                  width: 160,
-                                  height: 160,
-                                  color: Colors.black87,
-                                  child: const Icon(Icons.play_circle_fill, color: Colors.white, size: 48),
-                                )
-                              : Image.network(url, width: 160, height: 160, fit: BoxFit.cover),
-                        );
-                      },
+                      itemBuilder: (_, i) => _MediaThumbnail(
+                        url: (widget.post['media_urls'] as List)[i] as String,
+                      ),
                     ),
                   ),
                 ],
@@ -752,6 +706,225 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── 미디어 썸네일 (사진/영상 공통) ────────────────────
+class _MediaThumbnail extends StatelessWidget {
+  final String url;
+  final double size;
+
+  const _MediaThumbnail({required this.url, this.size = 160});
+
+  static bool _isVideo(String u) {
+    final l = u.toLowerCase();
+    return l.contains('.mp4') || l.contains('.mov') ||
+           l.contains('.avi') || l.contains('.webm');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final video = _isVideo(url);
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => video
+              ? _VideoPlayerScreen(url: url)
+              : _PhotoViewScreen(url: url),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: video
+            ? Container(
+                width: size,
+                height: size,
+                color: Colors.black87,
+                child: const Icon(Icons.play_circle_fill, color: Colors.white, size: 48),
+              )
+            : Image.network(
+                url,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : Container(
+                        width: size,
+                        height: size,
+                        color: Colors.grey.shade200,
+                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      ),
+                errorBuilder: (_, __, ___) => Container(
+                  width: size,
+                  height: size,
+                  color: Colors.grey.shade200,
+                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+// ── 사진 전체화면 뷰어 ────────────────────────────────
+class _PhotoViewScreen extends StatelessWidget {
+  final String url;
+
+  const _PhotoViewScreen({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 5.0,
+          child: Image.network(
+            url,
+            fit: BoxFit.contain,
+            loadingBuilder: (_, child, progress) => progress == null
+                ? child
+                : const CircularProgressIndicator(color: Colors.white),
+            errorBuilder: (_, __, ___) => const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.broken_image, color: Colors.white54, size: 64),
+                SizedBox(height: 8),
+                Text('이미지를 불러올 수 없어요', style: TextStyle(color: Colors.white54)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── 영상 플레이어 화면 ────────────────────────────────
+class _VideoPlayerScreen extends StatefulWidget {
+  final String url;
+
+  const _VideoPlayerScreen({required this.url});
+
+  @override
+  State<_VideoPlayerScreen> createState() => _VideoPlayerScreenState();
+}
+
+class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
+  late final VideoPlayerController _ctrl;
+  bool _initialized = false;
+  bool _error = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = VideoPlayerController.networkUrl(Uri.parse(widget.url))
+      ..initialize().then((_) {
+        if (!mounted) return;
+        setState(() => _initialized = true);
+        _ctrl.play();
+      }).catchError((_) {
+        if (mounted) setState(() => _error = true);
+      });
+    _ctrl.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  String _fmtDuration(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: Center(
+          child: _error
+              ? const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.white54, size: 64),
+                    SizedBox(height: 12),
+                    Text('영상을 불러올 수 없어요', style: TextStyle(color: Colors.white54)),
+                  ],
+                )
+              : !_initialized
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AspectRatio(
+                          aspectRatio: _ctrl.value.aspectRatio,
+                          child: VideoPlayer(_ctrl),
+                        ),
+                        const SizedBox(height: 8),
+                        // 진행 바
+                        VideoProgressIndicator(
+                          _ctrl,
+                          allowScrubbing: true,
+                          colors: const VideoProgressColors(
+                            playedColor: Colors.white,
+                            bufferedColor: Colors.white30,
+                            backgroundColor: Colors.white12,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                        ),
+                        // 시간 표시
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _fmtDuration(_ctrl.value.position),
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                              Text(
+                                _fmtDuration(_ctrl.value.duration),
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // 재생/일시정지
+                        IconButton(
+                          onPressed: () => _ctrl.value.isPlaying
+                              ? _ctrl.pause()
+                              : _ctrl.play(),
+                          icon: Icon(
+                            _ctrl.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                            color: Colors.white,
+                            size: 56,
+                          ),
+                        ),
+                      ],
+                    ),
+        ),
       ),
     );
   }
