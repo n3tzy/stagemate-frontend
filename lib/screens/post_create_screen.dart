@@ -54,8 +54,13 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text('카메라로 촬영'),
-              onTap: () => Navigator.pop(ctx, 'camera'),
+              title: const Text('사진 촬영'),
+              onTap: () => Navigator.pop(ctx, 'camera_photo'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam),
+              title: const Text('영상 촬영'),
+              onTap: () => Navigator.pop(ctx, 'camera_video'),
             ),
           ],
         ),
@@ -72,8 +77,15 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
             _selectedFiles = [..._selectedFiles, ...files].take(5).toList();
           });
         }
-      } else {
+      } else if (choice == 'camera_photo') {
         final file = await _picker.pickImage(source: ImageSource.camera);
+        if (file != null) {
+          setState(() {
+            _selectedFiles = [..._selectedFiles, file].take(5).toList();
+          });
+        }
+      } else if (choice == 'camera_video') {
+        final file = await _picker.pickVideo(source: ImageSource.camera);
         if (file != null) {
           setState(() {
             _selectedFiles = [..._selectedFiles, file].take(5).toList();
