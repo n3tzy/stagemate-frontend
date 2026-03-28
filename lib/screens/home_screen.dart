@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'schedule_screen.dart';
 import 'group_screen.dart';
 import 'booking_screen.dart';
@@ -28,6 +31,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  String? _avatarUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    ApiClient.getAvatarUrl().then((url) {
+      if (mounted) setState(() => _avatarUrl = url);
+    });
+  }
 
   // 역할별 권한 헬퍼
   bool get _isSuperAdmin => widget.role == 'super_admin';
@@ -125,11 +137,62 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 프로필 헤더
             Padding(
-              padding: const EdgeInsets.only(left: 8, bottom: 12),
-              child: Text(
-                '계정 관리  ·  ${widget.displayName}',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              padding: const EdgeInsets.only(left: 8, bottom: 16),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(sheetCtx);
+                      _showAvatarPicker();
+                    },
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                          foregroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+                              ? NetworkImage(_avatarUrl!)
+                              : null,
+                          child: Text(
+                            widget.displayName.isNotEmpty ? widget.displayName[0] : '?',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0, bottom: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.camera_alt, size: 12, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.displayName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Text(
+                        '프로필 사진을 탭해 변경',
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             ListTile(
@@ -303,6 +366,106 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _showAvatarPicker() async {
+    final picker = ImagePicker();
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('갤러리에서 선택'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('카메라로 촬영'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+            if (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+                title: Text('사진 삭제', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                onTap: () => Navigator.pop(ctx, 'delete'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null) return;
+
+    if (choice == 'delete') {
+      try {
+        await ApiClient.updateAvatarUrl('');
+        if (mounted) setState(() => _avatarUrl = null);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('프로필 사진이 삭제됐어요.')),
+          );
+        }
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    final file = await picker.pickImage(
+      source: choice == 'camera' ? ImageSource.camera : ImageSource.gallery,
+      imageQuality: 80,
+      maxWidth: 512,
+      maxHeight: 512,
+    );
+    if (file == null) return;
+
+    // 로딩 표시
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('프로필 사진 업로드 중...'), duration: Duration(seconds: 10)),
+      );
+    }
+
+    try {
+      final filename = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final presigned = await ApiClient.getPresignedUrl(filename, 'image/jpeg');
+      final uploadUrl = presigned['upload_url'] as String;
+      final publicUrl = presigned['public_url'] as String;
+
+      final bytes = await File(file.path).readAsBytes();
+      final res = await http.put(
+        Uri.parse(uploadUrl),
+        headers: {'Content-Type': 'image/jpeg'},
+        body: bytes,
+      );
+
+      if (res.statusCode == 200 || res.statusCode == 204) {
+        await ApiClient.updateAvatarUrl(publicUrl);
+        if (mounted) setState(() => _avatarUrl = publicUrl);
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(const SnackBar(
+              content: Text('프로필 사진이 업데이트됐어요!'),
+              backgroundColor: Colors.green,
+            ));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red));
+      }
+    }
   }
 
   void _showNicknameDialog() {

@@ -78,7 +78,12 @@ class ApiClient {
         },
       ).timeout(const Duration(seconds: 10));
 
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        await saveAvatarUrl(data['avatar_url'] as String?);
+        return true;
+      }
+      return false;
     } catch (_) {
       return false; // 네트워크 오류 / 타임아웃은 false 처리
     }
@@ -97,6 +102,19 @@ class ApiClient {
   static Future<void> saveUserInfo(String displayName, int userId) async {
     await _storage.write(key: 'display_name', value: displayName);
     await _storage.write(key: 'user_id', value: userId.toString());
+  }
+
+  static Future<void> saveAvatarUrl(String? url) async {
+    if (url != null && url.isNotEmpty) {
+      await _storage.write(key: 'avatar_url', value: url);
+    } else {
+      await _storage.delete(key: 'avatar_url');
+    }
+  }
+
+  static Future<String?> getAvatarUrl() async {
+    final v = await _storage.read(key: 'avatar_url');
+    return (v != null && v.isNotEmpty) ? v : null;
   }
 
   static Future<String?> getDisplayName() async {
@@ -543,6 +561,17 @@ class ApiClient {
       body: jsonEncode({'nickname': nickname}),
     ).timeout(_timeout);
     return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> updateAvatarUrl(String avatarUrl) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/auth/avatar'),
+      headers: await _headers(),
+      body: jsonEncode({'avatar_url': avatarUrl}),
+    ).timeout(_timeout);
+    final result = _parseResponse(response);
+    await saveAvatarUrl(avatarUrl);
+    return result;
   }
 
   static Future<Map<String, dynamic>> deletePost(int postId) async {

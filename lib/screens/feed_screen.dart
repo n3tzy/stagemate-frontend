@@ -156,18 +156,10 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
             children: [
               Row(
                 children: [
-                  CircleAvatar(
+                  _UserAvatar(
+                    name: post['author'] as String? ?? '?',
+                    avatarUrl: post['author_avatar'] as String?,
                     radius: 18,
-                    backgroundColor: colorScheme.primaryContainer,
-                    child: Text(
-                      (post['author'] as String? ?? '?').isNotEmpty
-                          ? (post['author'] as String)[0]
-                          : '?',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colorScheme.onPrimaryContainer,
-                      ),
-                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -523,15 +515,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
+                    _UserAvatar(
+                      name: widget.post['author'] as String? ?? '?',
+                      avatarUrl: widget.post['author_avatar'] as String?,
                       radius: 16,
-                      backgroundColor: colorScheme.primaryContainer,
-                      child: Text(
-                        (widget.post['author'] as String? ?? '?').isNotEmpty
-                            ? (widget.post['author'] as String)[0]
-                            : '?',
-                        style: TextStyle(fontSize: 12, color: colorScheme.onPrimaryContainer),
-                      ),
                     ),
                     const SizedBox(width: 8),
                     Column(
@@ -597,18 +584,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                CircleAvatar(
+                                _UserAvatar(
+                                  name: c['author'] as String? ?? '?',
+                                  avatarUrl: c['author_avatar'] as String?,
                                   radius: 16,
-                                  backgroundColor: colorScheme.secondaryContainer,
-                                  child: Text(
-                                    (c['author'] as String? ?? '?').isNotEmpty
-                                        ? (c['author'] as String)[0]
-                                        : '?',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: colorScheme.onSecondaryContainer,
-                                    ),
-                                  ),
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
@@ -1023,6 +1002,41 @@ class _VideoPageState extends State<_VideoPage> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── 유저 아바타 (프로필 사진 or 이니셜) ──────────────
+class _UserAvatar extends StatelessWidget {
+  final String name;
+  final String? avatarUrl;
+  final double radius;
+
+  const _UserAvatar({
+    required this.name,
+    required this.avatarUrl,
+    this.radius = 18,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final initial = name.isNotEmpty ? name[0] : '?';
+    final hasImage = avatarUrl != null && avatarUrl!.isNotEmpty;
+
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: colorScheme.primaryContainer,
+      foregroundImage: hasImage ? NetworkImage(avatarUrl!) : null,
+      onForegroundImageError: hasImage ? (_, __) {} : null,
+      child: Text(
+        initial,
+        style: TextStyle(
+          fontSize: radius * 0.72,
+          color: colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
