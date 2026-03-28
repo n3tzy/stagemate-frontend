@@ -189,6 +189,13 @@ class _LoginScreenState extends State<LoginScreen> {
     emailController.dispose();
   }
 
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _login() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
@@ -461,7 +468,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _displayNameController = TextEditingController();
-  final _nicknameCtrl = TextEditingController();
+  final _nicknameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -494,7 +501,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
     _nicknameFocus.addListener(() {
       if (!_nicknameFocus.hasFocus) {
-        final v = _nicknameCtrl.text.trim();
+        final v = _nicknameController.text.trim();
         if (v.isNotEmpty) _checkNickname(v);
       }
     });
@@ -508,7 +515,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _nicknameCtrl.dispose();
+    _usernameController.dispose();
+    _displayNameController.dispose();
+    _nicknameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _usernameFocus.dispose();
     _displayNameFocus.dispose();
     _nicknameFocus.dispose();
@@ -557,7 +569,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     final username = _usernameController.text.trim();
     final displayName = _displayNameController.text.trim();
-    final nickname = _nicknameCtrl.text.trim();
+    final nickname = _nicknameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirm = _confirmPasswordController.text;
@@ -703,7 +715,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 16),
               TextField(
-                controller: _nicknameCtrl,
+                controller: _nicknameController,
                 focusNode: _nicknameFocus,
                 onChanged: (_) => setState(() => _nicknameAvailable = null),
                 decoration: InputDecoration(
@@ -718,7 +730,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           : IconButton(
                               icon: const Icon(Icons.cancel, color: Colors.red),
                               onPressed: () {
-                                _nicknameCtrl.clear();
+                                _nicknameController.clear();
                                 setState(() => _nicknameAvailable = null);
                               },
                             ),
