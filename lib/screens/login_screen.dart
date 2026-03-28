@@ -461,17 +461,20 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _usernameController = TextEditingController();
   final _displayNameController = TextEditingController();
+  final _nicknameCtrl = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _usernameFocus = FocusNode();
   final _displayNameFocus = FocusNode();
+  final _nicknameFocus = FocusNode();
   final _emailFocus = FocusNode();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool? _usernameAvailable;
   bool? _displayNameAvailable;
+  bool? _nicknameAvailable;
   bool? _emailAvailable;
 
   @override
@@ -489,6 +492,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (v.isNotEmpty) _checkDisplayName(v);
       }
     });
+    _nicknameFocus.addListener(() {
+      if (!_nicknameFocus.hasFocus) {
+        final v = _nicknameCtrl.text.trim();
+        if (v.isNotEmpty) _checkNickname(v);
+      }
+    });
     _emailFocus.addListener(() {
       if (!_emailFocus.hasFocus) {
         final v = _emailController.text.trim();
@@ -499,8 +508,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
+    _nicknameCtrl.dispose();
     _usernameFocus.dispose();
     _displayNameFocus.dispose();
+    _nicknameFocus.dispose();
     _emailFocus.dispose();
     super.dispose();
   }
@@ -517,6 +528,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final available = await ApiClient.checkDisplayName(value);
       if (mounted) setState(() => _displayNameAvailable = available);
+    } catch (_) {}
+  }
+
+  Future<void> _checkNickname(String value) async {
+    if (value.length < 2 || value.length > 20) return;
+    try {
+      final available = await ApiClient.checkNickname(value);
+      if (mounted) setState(() => _nicknameAvailable = available);
     } catch (_) {}
   }
 
@@ -538,13 +557,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _register() async {
     final username = _usernameController.text.trim();
     final displayName = _displayNameController.text.trim();
+    final nickname = _nicknameCtrl.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirm = _confirmPasswordController.text;
 
     // 클라이언트 측 입력 검증 (서버와 동일 기준)
-    if (username.isEmpty || displayName.isEmpty || email.isEmpty ||
-        password.isEmpty || confirm.isEmpty) {
+    if (username.isEmpty || displayName.isEmpty || nickname.isEmpty ||
+        email.isEmpty || password.isEmpty || confirm.isEmpty) {
       _showError('모든 항목을 입력해주세요.');
       return;
     }
@@ -554,6 +574,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     if (_displayNameAvailable == false) {
       _showError('이미 사용 중인 닉네임입니다.');
+      return;
+    }
+    if (_nicknameAvailable == false) {
+      _showError('이미 사용 중인 커뮤니티 닉네임입니다.');
+      return;
+    }
+    if (nickname.length < 2 || nickname.length > 20) {
+      _showError('커뮤니티 닉네임은 2~20자여야 합니다.');
       return;
     }
     if (_emailAvailable == false) {
@@ -582,6 +610,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final data = await ApiClient.register(
         username: username,
         displayName: displayName,
+        nickname: nickname,
         email: email,
         password: password,
       );
@@ -669,6 +698,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                   errorText: _displayNameAvailable == false ? '이미 사용 중인 닉네임입니다.' : null,
                   helperText: _displayNameAvailable == true ? '사용 가능한 닉네임입니다.' : null,
+                  helperStyle: const TextStyle(color: Colors.green),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _nicknameCtrl,
+                focusNode: _nicknameFocus,
+                onChanged: (_) => setState(() => _nicknameAvailable = null),
+                decoration: InputDecoration(
+                  labelText: '닉네임 (커뮤니티 표시명)',
+                  hintText: '전체 채널에서 표시될 닉네임, 2~20자',
+                  prefixIcon: const Icon(Icons.public),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: _nicknameAvailable == null
+                      ? null
+                      : _nicknameAvailable!
+                          ? const Icon(Icons.check_circle, color: Colors.green)
+                          : IconButton(
+                              icon: const Icon(Icons.cancel, color: Colors.red),
+                              onPressed: () {
+                                _nicknameCtrl.clear();
+                                setState(() => _nicknameAvailable = null);
+                              },
+                            ),
+                  errorText: _nicknameAvailable == false ? '이미 사용 중인 커뮤니티 닉네임입니다.' : null,
+                  helperText: _nicknameAvailable == true ? '사용 가능한 커뮤니티 닉네임입니다.' : null,
                   helperStyle: const TextStyle(color: Colors.green),
                 ),
               ),

@@ -192,6 +192,7 @@ class ApiClient {
   static Future<Map<String, dynamic>> register({
     required String username,
     required String displayName,
+    required String nickname,
     required String email,
     required String password,
   }) async {
@@ -201,6 +202,7 @@ class ApiClient {
       body: jsonEncode({
         'username': username,
         'display_name': displayName,
+        'nickname': nickname,
         'email': email,
         'password': password,
       }),
@@ -219,6 +221,14 @@ class ApiClient {
   static Future<bool> checkDisplayName(String displayName) async {
     final response = await http.get(
       Uri.parse('$baseUrl/auth/check-displayname?display_name=${Uri.encodeComponent(displayName)}'),
+    ).timeout(_timeout);
+    final data = _parseResponse(response);
+    return data['available'] as bool;
+  }
+
+  static Future<bool> checkNickname(String nickname) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/auth/check-nickname?nickname=${Uri.encodeComponent(nickname)}'),
     ).timeout(_timeout);
     final data = _parseResponse(response);
     return data['available'] as bool;
