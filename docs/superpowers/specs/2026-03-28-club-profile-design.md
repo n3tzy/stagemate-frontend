@@ -118,8 +118,8 @@ lib/api/api_client.dart               (수정 — 2개 메서드 추가)
   | 빨강 | `#D32F2F` |
   | 분홍 | `#C2185B` |
 - 저장 → `PATCH /clubs/{id}/profile` → 성공 시 `onSaved` 콜백 호출
-- `ClubProfileEditSheet`는 `VoidCallback onSaved` 파라미터를 받음
-- 부모 `ClubProfileSheet`는 `onSaved`에서 `setState(() => _profile = updatedProfile)` 실행
+- `ClubProfileEditSheet`는 `void Function(Map<String, dynamic> updated) onSaved` 파라미터를 받음
+- 부모 `ClubProfileSheet`는 `onSaved`에서 `setState(() => _profile = updated)` 실행
 
 ### 연결 포인트
 
