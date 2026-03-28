@@ -63,7 +63,13 @@ class _ClubProfileSheetState extends State<ClubProfileSheet> {
       final data = await ApiClient.getClubProfile(widget.clubId);
       if (mounted) setState(() { _profile = data; _isLoading = false; });
     } catch (e) {
-      if (mounted) setState(() { _error = friendlyError(e); _isLoading = false; });
+      if (mounted) {
+        final rawMsg = e.toString();
+        final msg = rawMsg.startsWith('Exception: ')
+            ? rawMsg.replaceFirst('Exception: ', '')
+            : friendlyError(e);
+        setState(() { _error = msg; _isLoading = false; });
+      }
     }
   }
 
@@ -271,8 +277,12 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
       }
     } catch (e) {
       if (mounted) {
+        final rawMsg = e.toString();
+        final msg = rawMsg.startsWith('Exception: ')
+            ? rawMsg.replaceFirst('Exception: ', '')
+            : friendlyError(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyError(e))),
+          SnackBar(content: Text(msg)),
         );
       }
     } finally {
