@@ -279,6 +279,28 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
               ),
             ),
             const SizedBox(height: 12),
+            // 커뮤니티 이용 안내
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: colorScheme.errorContainer.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: colorScheme.error),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '성희롱·음란물, 과도한 욕설·비방이 포함된 게시글은 신고되거나 삭제 처리될 수 있어요.',
+                      style: TextStyle(fontSize: 12, color: colorScheme.onErrorContainer, height: 1.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             // 미디어 첨부
             Row(
               children: [

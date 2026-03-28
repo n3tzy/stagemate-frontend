@@ -20,6 +20,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
   bool _isLoading = false;
   String _myDisplayName = '';
   String _role = 'user';
+  int? _myUserId;
 
   @override
   void initState() {
@@ -46,6 +47,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
         ApiClient.getHotClubs(),
         ApiClient.getDisplayName(),
         ApiClient.getRole(),
+        ApiClient.getUserId(),
       ]);
       setState(() {
         _clubPosts = results[0] as List;
@@ -53,6 +55,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
         _hotClubs = results[2] as List;
         _myDisplayName = (results[3] as String?) ?? '';
         _role = (results[4] as String?) ?? 'user';
+        _myUserId = results[5] as int?;
       });
     } catch (e) {
       if (mounted) {
@@ -132,16 +135,95 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
       builder: (ctx) => _CommentsSheet(
         post: post,
         myDisplayName: _myDisplayName,
+        myUserId: _myUserId,
         role: _role,
         onChanged: _loadAll,
       ),
     );
   }
 
+  // ── 게시글 수정 다이얼로그 ─────────────────────────
+  Future<void> _showEditPostDialog(dynamic post, bool isGlobal) async {
+    final ctrl = TextEditingController(text: post['content'] as String? ?? '');
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('게시글 수정'),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 6,
+          maxLength: 2000,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('저장'),
+          ),
+        ],
+      ),
+    );
+    if (result != true) return;
+    try {
+      await ApiClient.updatePost(post['id'], ctrl.text.trim());
+      await _loadAll();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  // ── 신고 다이얼로그 ──────────────────────────────
+  Future<void> _showReportDialog({required int postId, int? commentId}) async {
+    String? selected;
+    final reasons = ['성희롱·음란물', '욕설·비방', '스팸·광고', '개인정보 노출', '기타'];
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (_, setState) => AlertDialog(
+          title: const Text('신고하기'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: reasons.map((r) => RadioListTile<String>(
+              value: r, groupValue: selected,
+              title: Text(r),
+              dense: true,
+              onChanged: (v) => setState(() => selected = v),
+            )).toList(),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+            FilledButton(
+              onPressed: selected == null ? null : () => Navigator.pop(ctx, selected),
+              child: const Text('신고'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result == null) return;
+    try {
+      if (commentId != null) {
+        await ApiClient.reportPostComment(postId, commentId, result);
+      } else {
+        await ApiClient.reportPost(postId, result);
+      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('신고가 접수됐어요.'), backgroundColor: Colors.orange),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   Widget _buildPostCard(dynamic post, bool isGlobal) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isMyPost = post['author'] == _myDisplayName;
-    final isAdmin = _role == 'admin' || _role == 'super_admin';
+    final isMyPost = (post['author_id'] as int?) == _myUserId;
     final mediaUrls = (post['media_urls'] as List?) ?? [];
 
     return Card(
@@ -183,18 +265,24 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                       ],
                     ),
                   ),
-                  if (isMyPost || isAdmin)
-                    IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        size: 18,
-                        color: colorScheme.error,
-                      ),
-                      onPressed: () => _deletePost(post['id'], isGlobal),
-                      tooltip: '삭제',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    ),
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, size: 18, color: colorScheme.outline),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    onSelected: (v) {
+                      if (v == 'edit') _showEditPostDialog(post, isGlobal);
+                      if (v == 'delete') _deletePost(post['id'], isGlobal);
+                      if (v == 'report') _showReportDialog(postId: post['id']);
+                    },
+                    itemBuilder: (_) => [
+                      if (isMyPost) ...[
+                        const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('수정')])),
+                        PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, size: 18, color: colorScheme.error), const SizedBox(width: 8), Text('삭제', style: TextStyle(color: colorScheme.error))])),
+                      ] else ...[
+                        const PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag_outlined, size: 18), SizedBox(width: 8), Text('신고')])),
+                      ],
+                    ],
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -407,12 +495,14 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
 class _CommentsSheet extends StatefulWidget {
   final dynamic post;
   final String myDisplayName;
+  final int? myUserId;
   final String role;
   final VoidCallback onChanged;
 
   const _CommentsSheet({
     required this.post,
     required this.myDisplayName,
+    this.myUserId,
     required this.role,
     required this.onChanged,
   });
@@ -485,10 +575,80 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     }
   }
 
+  Future<void> _showEditCommentDialog(dynamic comment) async {
+    final ctrl = TextEditingController(text: comment['content'] as String? ?? '');
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('댓글 수정'),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 4,
+          maxLength: 500,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('저장')),
+        ],
+      ),
+    );
+    if (result != true) return;
+    try {
+      await ApiClient.updatePostComment(widget.post['id'], comment['id'], ctrl.text.trim());
+      await _load();
+      widget.onChanged();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _showReportCommentDialog(int commentId) async {
+    String? selected;
+    final reasons = ['성희롱·음란물', '욕설·비방', '스팸·광고', '개인정보 노출', '기타'];
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (_, setState) => AlertDialog(
+          title: const Text('신고하기'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: reasons.map((r) => RadioListTile<String>(
+              value: r, groupValue: selected,
+              title: Text(r),
+              dense: true,
+              onChanged: (v) => setState(() => selected = v),
+            )).toList(),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+            FilledButton(
+              onPressed: selected == null ? null : () => Navigator.pop(ctx, selected),
+              child: const Text('신고'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result == null) return;
+    try {
+      await ApiClient.reportPostComment(widget.post['id'], commentId, result);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('신고가 접수됐어요.'), backgroundColor: Colors.orange),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isAdmin = widget.role == 'admin' || widget.role == 'super_admin';
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -578,7 +738,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                         itemCount: _comments.length,
                         itemBuilder: (_, i) {
                           final c = _comments[i];
-                          final isMine = c['author'] == widget.myDisplayName;
+                          final isMine = (c['author_id'] as int?) == widget.myUserId;
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 6),
                             child: Row(
@@ -621,18 +781,24 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                     ],
                                   ),
                                 ),
-                                if (isMine || isAdmin)
-                                  GestureDetector(
-                                    onTap: () => _delete(c['id']),
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(left: 4, top: 2),
-                                      child: Icon(
-                                        Icons.close,
-                                        size: 16,
-                                        color: colorScheme.outline,
-                                      ),
-                                    ),
-                                  ),
+                                PopupMenuButton<String>(
+                                  icon: Icon(Icons.more_vert, size: 16, color: colorScheme.outline),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                  onSelected: (v) {
+                                    if (v == 'edit') _showEditCommentDialog(c);
+                                    if (v == 'delete') _delete(c['id']);
+                                    if (v == 'report') _showReportCommentDialog(c['id']);
+                                  },
+                                  itemBuilder: (_) => [
+                                    if (isMine) ...[
+                                      const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('수정')])),
+                                      PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, size: 18, color: colorScheme.error), SizedBox(width: 8), Text('삭제', style: TextStyle(color: colorScheme.error))])),
+                                    ] else ...[
+                                      const PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag_outlined, size: 18), SizedBox(width: 8), Text('신고')])),
+                                    ],
+                                  ],
+                                ),
                               ],
                             ),
                           );

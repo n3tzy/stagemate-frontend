@@ -617,6 +617,42 @@ class ApiClient {
     return _parseResponse(response);
   }
 
+  static Future<Map<String, dynamic>> updatePost(int postId, String content) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/posts/$postId'),
+      headers: await _headers(),
+      body: jsonEncode({'content': content}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> updatePostComment(int postId, int commentId, String content) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/posts/$postId/comments/$commentId'),
+      headers: await _headers(),
+      body: jsonEncode({'content': content}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> reportPost(int postId, String reason) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/posts/$postId/report'),
+      headers: await _headers(),
+      body: jsonEncode({'reason': reason}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> reportPostComment(int postId, int commentId, String reason) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/posts/$postId/comments/$commentId/report'),
+      headers: await _headers(),
+      body: jsonEncode({'reason': reason}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
   static Future<Map<String, dynamic>> deletePostComment(int postId, int commentId) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/posts/$postId/comments/$commentId'),
