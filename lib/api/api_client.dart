@@ -845,4 +845,115 @@ class ApiClient {
     if (response.statusCode >= 500) throw ServerException();
     return jsonDecode(utf8.decode(response.bodyBytes));
   }
+
+  // ── 음원 제출 게시판 ──────────────────────────
+  static Future<List<dynamic>> getPerformances(int clubId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/$clubId/performances'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes)) as List;
+  }
+
+  static Future<Map<String, dynamic>> createPerformance(
+    int clubId, {
+    required String name,
+    String? performanceDate,
+    String? submissionDeadline,
+  }) async {
+    final body = <String, dynamic>{'name': name};
+    if (performanceDate != null) body['performance_date'] = performanceDate;
+    if (submissionDeadline != null) body['submission_deadline'] = submissionDeadline;
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/$clubId/performances'),
+      headers: await _headers(),
+      body: jsonEncode(body),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<void> deletePerformance(int clubId, int perfId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/clubs/$clubId/performances/$perfId'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode == 404) throw Exception('공연을 찾을 수 없습니다.');
+    if (response.statusCode >= 500) throw ServerException();
+  }
+
+  static Future<List<dynamic>> getSubmissions(int clubId, int perfId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/$clubId/performances/$perfId/submissions'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes)) as List;
+  }
+
+  static Future<Map<String, dynamic>?> getMySubmission(
+      int clubId, int perfId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/$clubId/performances/$perfId/submissions/mine'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode >= 500) throw ServerException();
+    final body = jsonDecode(utf8.decode(response.bodyBytes));
+    return body['submission'] as Map<String, dynamic>?;
+  }
+
+  static Future<Map<String, dynamic>> submitAudio(
+    int clubId,
+    int perfId, {
+    required String teamName,
+    required String songTitle,
+    required String fileUrl,
+    required int fileSizeMb,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/$clubId/performances/$perfId/submissions'),
+      headers: await _headers(),
+      body: jsonEncode({
+        'team_name': teamName,
+        'song_title': songTitle,
+        'file_url': fileUrl,
+        'file_size_mb': fileSizeMb,
+      }),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode == 404) throw Exception('공연을 찾을 수 없습니다.');
+    if (response.statusCode == 400) {
+      try {
+        final b = jsonDecode(utf8.decode(response.bodyBytes));
+        final detail = b['detail'];
+        if (detail is String) throw Exception(detail);
+        if (detail is List && detail.isNotEmpty) {
+          throw Exception((detail.first['msg'] as String?) ?? '잘못된 입력입니다.');
+        }
+      } catch (e) {
+        if (e is Exception) rethrow;
+      }
+      throw Exception('잘못된 입력입니다.');
+    }
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<void> deleteSubmission(
+      int clubId, int perfId, int subId) async {
+    final response = await http.delete(
+      Uri.parse(
+          '$baseUrl/clubs/$clubId/performances/$perfId/submissions/$subId'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('본인의 제출만 삭제할 수 있습니다.');
+    if (response.statusCode == 404) throw Exception('제출을 찾을 수 없습니다.');
+    if (response.statusCode >= 500) throw ServerException();
+  }
 }
