@@ -17,34 +17,43 @@
 
 ### 1. `GET /clubs/{club_id}/profile`
 
-- **권한:** 로그인한 사용자 누구나 (`get_current_user`)
+- **권한:** `get_current_user` (로그인한 사용자 누구나)
+  - **⚠️ 구현 주의:** `require_any_member`를 사용하지 말 것. 그 의존성은 `X-Club-Id` 헤더 기반으로 다른 동아리를 체크함. 이 엔드포인트는 path parameter `club_id`를 기준으로 조회만 하면 됨.
 - **응답:**
   ```json
   {
     "club_id": 1,
     "name": "한양대 GROOVE",
     "logo_url": "https://...",
-    "banner_url": "https://...",
+    "banner_url": null,
     "theme_color": "#6750A4",
     "member_count": 23
   }
   ```
 - logo_url, banner_url, theme_color는 null 가능
+- **404:** `club_id`에 해당하는 동아리가 없으면 `404 Not Found` 반환
 
 ### 2. `PATCH /clubs/{club_id}/profile`
 
-- **권한:** 해당 동아리 super_admin만
+- **권한:** path parameter `club_id`에 해당하는 동아리의 super_admin만
+  - **⚠️ 구현 주의:** `require_super_admin` 의존성을 그대로 사용하지 말 것 (헤더 기반). 대신 `get_current_user`로 유저를 가져온 뒤, `ClubMember` 테이블에서 `club_id=path_club_id AND user_id=current_user.id AND role='super_admin'`을 직접 조회.
 - **바디 (모두 선택):**
   ```json
   {
     "logo_url": "https://...",
-    "banner_url": "https://...",
-    "theme_color": "#RRGGBB"
+    "banner_url": null,
+    "theme_color": "#6750A4"
   }
   ```
-- theme_color 유효성 검사: `#RRGGBB` 형식 (7자)
-- logo_url / banner_url: `http(s)://` 형식 검사
-- **응답:** 수정된 프로필 전체 반환
+- `theme_color` 유효성 검사: 정규식 `^#[0-9A-Fa-f]{6}$`
+- `logo_url` / `banner_url`: `http://` 또는 `https://`로 시작해야 함. `null`은 허용 (해당 필드 초기화). 빈 문자열 `""`은 400 에러.
+- **응답:** GET과 동일한 형태 반환 (`member_count` 포함):
+  ```json
+  {
+    "club_id": 1, "name": "...", "logo_url": "...",
+    "banner_url": null, "theme_color": "#6750A4", "member_count": 23
+  }
+  ```
 
 ### 3. `GET /clubs/hot-ranking` 응답 수정
 
@@ -52,6 +61,7 @@
 ```json
 { "rank": 1, "club_name": "GROOVE", "club_id": 3, "score": 42 }
 ```
+- 기존 `require_any_member` 권한 유지 (로그인 + 동아리 소속 필요)
 
 ---
 
@@ -84,6 +94,7 @@ lib/api/api_client.dart               (수정 — 2개 메서드 추가)
 
 4. **편집 버튼:**
    - `isOwner == true`일 때만 표시
+   - `isOwner`는 호출 시점에서 **신선한 role 값** 기반으로 전달 (`club_manage_screen`의 경우 `_loadMembers()` 결과에서 현재 유저 role 확인)
    - 탭 시 `ClubProfileEditSheet` 열기
 
 ### `ClubProfileEditSheet` (편집, super_admin만)
@@ -91,9 +102,18 @@ lib/api/api_client.dart               (수정 — 2개 메서드 추가)
 같은 파일 내 별도 위젯. 구성:
 - 로고 URL 입력 필드
 - 배너 URL 입력 필드
-- 테마 컬러: `ColorPicker` 대신 미리 정의된 6가지 컬러 칩으로 단순화
-  (Material 3 기본 팔레트: 보라, 파랑, 초록, 주황, 빨강, 분홍)
-- 저장 → `PATCH /clubs/{id}/profile` → 성공 시 부모 시트 `setState`로 갱신
+- 테마 컬러: `ColorPicker` 대신 미리 정의된 6가지 컬러 칩으로 단순화:
+  | 이름 | 헥스값 |
+  |------|--------|
+  | 보라 (기본) | `#6750A4` |
+  | 파랑 | `#1976D2` |
+  | 초록 | `#388E3C` |
+  | 주황 | `#F57C00` |
+  | 빨강 | `#D32F2F` |
+  | 분홍 | `#C2185B` |
+- 저장 → `PATCH /clubs/{id}/profile` → 성공 시 `onSaved` 콜백 호출
+- `ClubProfileEditSheet`는 `VoidCallback onSaved` 파라미터를 받음
+- 부모 `ClubProfileSheet`는 `onSaved`에서 `setState(() => _profile = updatedProfile)` 실행
 
 ### 연결 포인트
 
