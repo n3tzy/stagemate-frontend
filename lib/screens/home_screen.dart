@@ -720,6 +720,75 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  Widget _buildBottomNav(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final destinations = _destinations;
+    return Container(
+      color: colorScheme.surfaceContainer,
+      height: 72,
+      child: Row(
+        children: [
+          for (int i = 0; i < destinations.length; i++) ...[
+            if (i > 0)
+              VerticalDivider(
+                width: 1,
+                thickness: 1,
+                indent: 10,
+                endIndent: 10,
+                color: colorScheme.outlineVariant,
+              ),
+            Expanded(
+              child: InkWell(
+                onTap: () => setState(() => _currentIndex = i),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _currentIndex == i
+                            ? colorScheme.secondaryContainer
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: IconTheme(
+                        data: IconThemeData(
+                          color: _currentIndex == i
+                              ? colorScheme.onSecondaryContainer
+                              : colorScheme.onSurfaceVariant,
+                          size: 22,
+                        ),
+                        child: _currentIndex == i
+                            ? (destinations[i].selectedIcon ?? destinations[i].icon)
+                            : destinations[i].icon,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      destinations[i].label,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: _currentIndex == i
+                            ? colorScheme.onSurface
+                            : colorScheme.onSurfaceVariant,
+                        fontWeight: _currentIndex == i
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -821,13 +890,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Divider(height: 1, thickness: 1),
-          NavigationBar(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (index) {
-              setState(() => _currentIndex = index);
-            },
-            destinations: _destinations,
-          ),
+          _buildBottomNav(context),
         ],
       ),
     );

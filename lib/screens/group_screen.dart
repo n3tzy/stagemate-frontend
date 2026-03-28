@@ -331,7 +331,7 @@ class _GroupScreenState extends State<GroupScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('👥 스케줄 조율'),
+        title: const Text('스케줄 조율'),
         backgroundColor: colorScheme.primaryContainer,
         actions: [
           // 새로고침
