@@ -51,6 +51,7 @@ class _ClubProfileSheetState extends State<ClubProfileSheet> {
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
   String? _error;
+  bool _popScheduled = false;
 
   @override
   void initState() {
@@ -85,14 +86,17 @@ class _ClubProfileSheetState extends State<ClubProfileSheet> {
     }
     if (_error != null || _profile == null) {
       // 404 등 에러 시 시트를 닫고 SnackBar 표시 (spec 요구사항)
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(_error ?? '동아리 정보를 불러올 수 없습니다.')),
-          );
-        }
-      });
+      if (!_popScheduled) {
+        _popScheduled = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(_error ?? '동아리 정보를 불러올 수 없습니다.')),
+            );
+          }
+        });
+      }
       return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
     }
 

@@ -729,6 +729,7 @@ class ApiClient {
       Uri.parse('$baseUrl/clubs/$clubId/profile'),
       headers: await _headers(),
     ).timeout(_timeout);
+    if (response.statusCode == 401) throw const UnauthorizedException();
     if (response.statusCode == 404) {
       throw Exception('동아리를 찾을 수 없습니다.');
     }
