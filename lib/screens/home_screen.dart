@@ -14,6 +14,7 @@ import '../api/api_client.dart';
 import 'feed_screen.dart';
 import 'my_activity_screen.dart';
 import 'notifications_screen.dart';
+import 'audio_submission_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String displayName;
@@ -71,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool get _isAdmin => widget.role == 'admin' || _isSuperAdmin;
   bool get _canOptimizeSchedule => _isAdmin;
   bool get _canManageClub => _isSuperAdmin;
+  bool get _canSubmitAudio => widget.role != 'user';
 
   // 역할에 따라 탭 화면 구성
   List<Widget> get _screens {
@@ -80,6 +82,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (_canOptimizeSchedule) const ScheduleScreen(),
       const GroupScreen(),
       const BookingScreen(),
+      if (_canSubmitAudio)
+        AudioSubmissionScreen(role: widget.role),
       if (_canManageClub) const ClubManageScreen(),
     ];
   }
@@ -107,6 +111,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         icon: Icon(Icons.meeting_room),
         label: '연습실 예약',
       ),
+      if (_canSubmitAudio)
+        const NavigationDestination(
+          icon: Icon(Icons.audio_file),
+          label: '음원 제출',
+        ),
       if (_canManageClub)
         const NavigationDestination(
           icon: Icon(Icons.manage_accounts),
