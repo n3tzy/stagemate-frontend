@@ -22,6 +22,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
   String _myDisplayName = '';
   String _role = 'user';
   int? _myUserId;
+  OverlayEntry? _postMenuOverlay;
 
   @override
   void initState() {
@@ -35,8 +36,98 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
 
   @override
   void dispose() {
+    _hidePostMenu();
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _hidePostMenu() {
+    _postMenuOverlay?.remove();
+    _postMenuOverlay = null;
+  }
+
+  void _showPostMenu({
+    required BuildContext iconContext,
+    required dynamic post,
+    required bool isMyPost,
+    required bool isGlobal,
+  }) {
+    _hidePostMenu();
+    final renderBox = iconContext.findRenderObject() as RenderBox;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    _postMenuOverlay = OverlayEntry(
+      builder: (_) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _hidePostMenu,
+        onVerticalDragStart: (_) => _hidePostMenu(),
+        child: Stack(
+          children: [
+            Positioned(
+              top: offset.dy + size.height,
+              right: MediaQuery.of(context).size.width - offset.dx - size.width,
+              child: GestureDetector(
+                onTap: () {}, // prevent tap-through on menu itself
+                child: Material(
+                  elevation: 8,
+                  borderRadius: BorderRadius.circular(8),
+                  child: IntrinsicWidth(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (isMyPost) ...[
+                          ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.edit_outlined, size: 18),
+                            title: const Text('수정'),
+                            onTap: () {
+                              _hidePostMenu();
+                              _showEditPostDialog(post, isGlobal);
+                            },
+                          ),
+                          ListTile(
+                            dense: true,
+                            leading: Icon(Icons.delete_outline, size: 18, color: colorScheme.error),
+                            title: Text('삭제', style: TextStyle(color: colorScheme.error)),
+                            onTap: () {
+                              _hidePostMenu();
+                              _deletePost(post['id'], isGlobal);
+                            },
+                          ),
+                        ] else ...[
+                          ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.flag_outlined, size: 18),
+                            title: const Text('신고'),
+                            onTap: () {
+                              _hidePostMenu();
+                              _showReportDialog(postId: post['id']);
+                            },
+                          ),
+                        ],
+                        if (isGlobal && _role == 'super_admin' && !(post['is_boosted'] as bool? ?? false))
+                          ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.rocket_launch, size: 18, color: Colors.orange),
+                            title: const Text('홍보하기', style: TextStyle(color: Colors.orange)),
+                            onTap: () {
+                              _hidePostMenu();
+                              _boostPost(post);
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    Overlay.of(context).insert(_postMenuOverlay!);
   }
 
   Future<void> _loadAll() async {
@@ -332,26 +423,18 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                       ],
                     ),
                   ),
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert, size: 18, color: colorScheme.outline),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onSelected: (v) {
-                      if (v == 'edit') _showEditPostDialog(post, isGlobal);
-                      if (v == 'delete') _deletePost(post['id'], isGlobal);
-                      if (v == 'report') _showReportDialog(postId: post['id']);
-                      if (v == 'boost') _boostPost(post);
-                    },
-                    itemBuilder: (_) => [
-                      if (isMyPost) ...[
-                        const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('수정')])),
-                        PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, size: 18, color: colorScheme.error), const SizedBox(width: 8), Text('삭제', style: TextStyle(color: colorScheme.error))])),
-                      ] else ...[
-                        const PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag_outlined, size: 18), SizedBox(width: 8), Text('신고')])),
-                      ],
-                      if (isGlobal && _role == 'super_admin' && !(post['is_boosted'] as bool? ?? false))
-                        const PopupMenuItem(value: 'boost', child: Row(children: [Icon(Icons.rocket_launch, size: 18, color: Colors.orange), SizedBox(width: 8), Text('홍보하기')])),
-                    ],
+                  Builder(
+                    builder: (iconContext) => IconButton(
+                      icon: Icon(Icons.more_vert, size: 18, color: colorScheme.outline),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      onPressed: () => _showPostMenu(
+                        iconContext: iconContext,
+                        post: post,
+                        isMyPost: isMyPost,
+                        isGlobal: isGlobal,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -624,6 +707,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   bool _loading = true;
   bool _submitting = false;
   final _ctrl = TextEditingController();
+  OverlayEntry? _commentMenuOverlay;
 
   @override
   void initState() {
@@ -633,8 +717,87 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
   @override
   void dispose() {
+    _hideCommentMenu();
     _ctrl.dispose();
     super.dispose();
+  }
+
+  void _hideCommentMenu() {
+    _commentMenuOverlay?.remove();
+    _commentMenuOverlay = null;
+  }
+
+  void _showCommentMenu({
+    required BuildContext iconContext,
+    required dynamic comment,
+    required bool isMine,
+  }) {
+    _hideCommentMenu();
+    final renderBox = iconContext.findRenderObject() as RenderBox;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    _commentMenuOverlay = OverlayEntry(
+      builder: (_) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _hideCommentMenu,
+        onVerticalDragStart: (_) => _hideCommentMenu(),
+        child: Stack(
+          children: [
+            Positioned(
+              top: offset.dy + size.height,
+              right: MediaQuery.of(context).size.width - offset.dx - size.width,
+              child: GestureDetector(
+                onTap: () {},
+                child: Material(
+                  elevation: 8,
+                  borderRadius: BorderRadius.circular(8),
+                  child: IntrinsicWidth(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (isMine) ...[
+                          ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.edit_outlined, size: 18),
+                            title: const Text('수정'),
+                            onTap: () {
+                              _hideCommentMenu();
+                              _showEditCommentDialog(comment);
+                            },
+                          ),
+                          ListTile(
+                            dense: true,
+                            leading: Icon(Icons.delete_outline, size: 18, color: colorScheme.error),
+                            title: Text('삭제', style: TextStyle(color: colorScheme.error)),
+                            onTap: () {
+                              _hideCommentMenu();
+                              _delete(comment['id']);
+                            },
+                          ),
+                        ] else ...[
+                          ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.flag_outlined, size: 18),
+                            title: const Text('신고'),
+                            onTap: () {
+                              _hideCommentMenu();
+                              _showReportCommentDialog(comment['id']);
+                            },
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    Overlay.of(context).insert(_commentMenuOverlay!);
   }
 
   Future<void> _load() async {
@@ -901,23 +1064,17 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                     ],
                                   ),
                                 ),
-                                PopupMenuButton<String>(
-                                  icon: Icon(Icons.more_vert, size: 16, color: colorScheme.outline),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                  onSelected: (v) {
-                                    if (v == 'edit') _showEditCommentDialog(c);
-                                    if (v == 'delete') _delete(c['id']);
-                                    if (v == 'report') _showReportCommentDialog(c['id']);
-                                  },
-                                  itemBuilder: (_) => [
-                                    if (isMine) ...[
-                                      const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('수정')])),
-                                      PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, size: 18, color: colorScheme.error), SizedBox(width: 8), Text('삭제', style: TextStyle(color: colorScheme.error))])),
-                                    ] else ...[
-                                      const PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag_outlined, size: 18), SizedBox(width: 8), Text('신고')])),
-                                    ],
-                                  ],
+                                Builder(
+                                  builder: (iconContext) => IconButton(
+                                    icon: Icon(Icons.more_vert, size: 16, color: colorScheme.outline),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                    onPressed: () => _showCommentMenu(
+                                      iconContext: iconContext,
+                                      comment: c,
+                                      isMine: isMine,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),

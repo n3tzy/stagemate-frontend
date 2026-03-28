@@ -36,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   String? _avatarUrl;
   int _unreadCount = 0;
+  bool _notificationsEnabled = true;
 
   @override
   void initState() {
@@ -45,6 +46,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) setState(() => _avatarUrl = url);
     });
     _loadUnreadCount();
+    _loadNotificationSetting();
+  }
+
+  Future<void> _loadNotificationSetting() async {
+    final val = await ApiClient.getStoredValue('notifications_enabled');
+    if (mounted) {
+      setState(() => _notificationsEnabled = val != 'false');
+    }
   }
 
   @override
@@ -60,6 +69,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _loadUnreadCount() async {
     try {
+      if (!_notificationsEnabled) {
+        if (mounted) setState(() => _unreadCount = 0);
+        return;
+      }
       final data = await ApiClient.getNotifications();
       if (mounted) {
         setState(() => _unreadCount = (data['unread_count'] as int?) ?? 0);
@@ -282,6 +295,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 Navigator.pop(sheetCtx);
                 _showNicknameDialog();
               },
+            ),
+            StatefulBuilder(
+              builder: (_, setSheetState) => SwitchListTile(
+                secondary: const Icon(Icons.notifications_outlined),
+                title: const Text('알림'),
+                subtitle: const Text('댓글/좋아요 알림 수신'),
+                value: _notificationsEnabled,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onChanged: (val) async {
+                  await ApiClient.storeValue('notifications_enabled', val ? 'true' : 'false');
+                  setSheetState(() {});
+                  setState(() {
+                    _notificationsEnabled = val;
+                    if (!val) _unreadCount = 0;
+                  });
+                },
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.lock_reset),
@@ -865,7 +895,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 onPressed: () async {
                   await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => NotificationsScreen(
+                        onPostTap: (postId) {
+                          // Switch to feed tab (index 1 = 피드)
+                          setState(() => _currentIndex = 1);
+                        },
+                      ),
+                    ),
                   );
                   _loadUnreadCount();
                 },

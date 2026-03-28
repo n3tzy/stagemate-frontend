@@ -160,6 +160,14 @@ class ApiClient {
     await _storage.deleteAll();
   }
 
+  static Future<String?> getStoredValue(String key) async {
+    return await _storage.read(key: key);
+  }
+
+  static Future<void> storeValue(String key, String value) async {
+    await _storage.write(key: key, value: value);
+  }
+
   // ── 공통 헤더 (토큰 + X-Club-Id 자동 포함) ──────────
   static Future<Map<String, String>> _headers() async {
     final token = await getToken();

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({super.key});
+  final void Function(int postId)? onPostTap;
+  const NotificationsScreen({super.key, this.onPostTap});
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -115,6 +116,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         tileColor: isRead
                             ? null
                             : colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        trailing: (n['post_id'] as int?) != null
+                            ? Icon(Icons.chevron_right, color: colorScheme.outline)
+                            : null,
+                        enabled: (n['post_id'] as int?) != null,
+                        onTap: () {
+                          final postId = n['post_id'] as int?;
+                          if (postId != null && widget.onPostTap != null) {
+                            Navigator.pop(context);
+                            widget.onPostTap!(postId);
+                          }
+                        },
                       );
                     },
                   ),
