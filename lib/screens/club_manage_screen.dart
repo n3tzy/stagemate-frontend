@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../api/api_client.dart';
 import 'club_profile_sheet.dart';
+import 'subscription_screen.dart';
 
 class ClubManageScreen extends StatefulWidget {
   const ClubManageScreen({super.key});
@@ -382,6 +383,25 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
               ),
             ),
             const SizedBox(height: 8),
+            // ── 구독 / 플랜 카드 ─────────────────────────
+            if (_myRole == 'super_admin')
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.workspace_premium_outlined),
+                  title: const Text('플랜 & 구독'),
+                  subtitle: const Text('스토리지·홍보 크레딧 관리'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _clubId == null
+                      ? null
+                      : () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ClubSubscriptionScreen(clubId: _clubId!),
+                            ),
+                          ),
+                ),
+              ),
+            if (_myRole == 'super_admin') const SizedBox(height: 8),
             // ── 초대 코드 섹션 ────────────────────────
             Text(
               '초대 코드',
