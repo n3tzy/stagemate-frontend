@@ -35,6 +35,82 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Future<void> _showFindIdDialog() async {
+    final emailController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        bool isSending = false;
+        return StatefulBuilder(
+          builder: (ctx, setDs) => AlertDialog(
+            title: const Text('아이디 찾기'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('가입 시 등록한 이메일 주소를 입력하면\n아이디를 발송해 드립니다.'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    decoration: const InputDecoration(
+                      labelText: '이메일',
+                      prefixIcon: Icon(Icons.email_outlined),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('취소'),
+              ),
+              FilledButton(
+                onPressed: isSending
+                    ? null
+                    : () async {
+                        final email = emailController.text.trim();
+                        if (email.isEmpty) return;
+                        setDs(() => isSending = true);
+                        try {
+                          await ApiClient.findId(email);
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('이메일을 확인하세요. 아이디를 발송했습니다.'),
+                              backgroundColor: Colors.green,
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                        } catch (e) {
+                          setDs(() => isSending = false);
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(content: Text(friendlyError(e))),
+                          );
+                        }
+                      },
+                child: isSending
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('발송'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    emailController.dispose();
+  }
+
   Future<void> _showForgotPasswordDialog() async {
     final emailController = TextEditingController();
     await showDialog(
@@ -240,7 +316,11 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('🎭', style: TextStyle(fontSize: 64)),
+              Icon(
+                Icons.theater_comedy_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 8),
               Text(
                 'StageMate',
@@ -324,23 +404,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     side: BorderSide.none,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('💬', style: TextStyle(fontSize: 18)),
-                      SizedBox(width: 8),
-                      Text('카카오로 시작하기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                    ],
+                  child: const Text(
+                    'K  카카오로 시작하기',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
               const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => _showForgotPasswordDialog(),
-                child: Text(
-                  '비밀번호를 잊으셨나요?',
-                  style: TextStyle(color: colorScheme.outline, fontSize: 13),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () => _showFindIdDialog(),
+                    child: Text(
+                      '아이디 찾기',
+                      style: TextStyle(color: colorScheme.outline, fontSize: 13),
+                    ),
+                  ),
+                  Text('|', style: TextStyle(color: colorScheme.outlineVariant, fontSize: 13)),
+                  TextButton(
+                    onPressed: () => _showForgotPasswordDialog(),
+                    child: Text(
+                      '비밀번호 찾기',
+                      style: TextStyle(color: colorScheme.outline, fontSize: 13),
+                    ),
+                  ),
+                ],
               ),
               TextButton(
                 onPressed: () {
@@ -529,8 +618,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('🎵', style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
               TextField(
                 controller: _usernameController,
                 focusNode: _usernameFocus,

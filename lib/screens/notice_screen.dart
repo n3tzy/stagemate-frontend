@@ -142,7 +142,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('📢 공지사항'),
+        title: const Text('공지사항'),
         backgroundColor: colorScheme.primaryContainer,
         // admin / super_admin만 작성 버튼 표시
         actions: [

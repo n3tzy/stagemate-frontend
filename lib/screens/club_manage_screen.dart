@@ -71,7 +71,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ 초대 코드가 복사됐습니다!'),
+          content: Text('초대 코드가 복사됐습니다.'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 2),
         ),
@@ -98,10 +98,10 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _roleOption(selectedRole, 'admin', '⭐ 임원진',
+              _roleOption(selectedRole, 'admin', '임원진',
                   '공지 작성·삭제, 무대순서 최적화',
                   (v) => setDs(() => selectedRole = v!)),
-              _roleOption(selectedRole, 'user', '🎵 일반 멤버',
+              _roleOption(selectedRole, 'user', '일반 멤버',
                   '공지·스케줄 조율·연습실 예약',
                   (v) => setDs(() => selectedRole = v!)),
             ],
@@ -126,7 +126,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
       await ApiClient.updateMemberRole(_clubId!, member['user_id'], result);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ ${member['display_name']} 역할이 ${_roleKo(result)}(으)로 변경됐습니다.'),
+          content: Text('${member['display_name']} 역할이 ${_roleKo(result)}(으)로 변경됐습니다.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -187,7 +187,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          title: const Text('✅ 임시 비밀번호 발급 완료'),
+          title: const Text('임시 비밀번호 발급 완료'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,7 +227,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
                 Clipboard.setData(ClipboardData(text: tempPwd));
                 ScaffoldMessenger.of(ctx).showSnackBar(
                   const SnackBar(
-                    content: Text('✅ 임시 비밀번호가 복사됐습니다!'),
+                    content: Text('임시 비밀번호가 복사됐습니다.'),
                     backgroundColor: Colors.green,
                     duration: Duration(seconds: 2),
                   ),
@@ -320,14 +320,14 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     }
   }
 
-  String _roleEmoji(String role) {
+  IconData _roleIcon(String role) {
     switch (role) {
       case 'super_admin':
-        return '👑';
+        return Icons.star;
       case 'admin':
-        return '⭐';
+        return Icons.manage_accounts;
       default:
-        return '🎵';
+        return Icons.person;
     }
   }
 
@@ -337,7 +337,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🏛️ 동아리 관리'),
+        title: const Text('동아리 관리'),
         backgroundColor: colorScheme.primaryContainer,
         actions: [
           IconButton(
@@ -493,9 +493,10 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: _roleColor(role, colorScheme),
-                      child: Text(
-                        _roleEmoji(role),
-                        style: const TextStyle(fontSize: 18),
+                      child: Icon(
+                        _roleIcon(role),
+                        size: 20,
+                        color: Colors.white,
                       ),
                     ),
                     title: Row(

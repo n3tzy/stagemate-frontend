@@ -26,7 +26,6 @@ class ClubOnboardingScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('🎭', style: TextStyle(fontSize: 64), textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     Text(
                       '동아리에 참여하세요',
@@ -145,13 +144,13 @@ Future<void> showWelcomeDialog({
       String roleLabel;
       switch (role) {
         case 'super_admin':
-          roleLabel = '👑 회장';
+          roleLabel = '회장';
           break;
         case 'admin':
-          roleLabel = '⭐ 임원진';
+          roleLabel = '임원진';
           break;
         default:
-          roleLabel = '🎵 멤버';
+          roleLabel = '멤버';
       }
 
       return Dialog(
@@ -167,7 +166,6 @@ Future<void> showWelcomeDialog({
                 Center(
                   child: Column(
                     children: [
-                      const Text('🎉', style: TextStyle(fontSize: 48)),
                       const SizedBox(height: 8),
                       Text(
                         'StageMate에 오신 것을\n환영해요!',
@@ -229,9 +227,9 @@ Future<void> showWelcomeDialog({
                   iconColor: Colors.blue,
                   title: '역할별 권한 안내',
                   content:
-                      '👑 회장: 모든 기능 + 동아리 관리\n'
-                      '⭐ 임원진: 공지 작성, 무대 순서 최적화\n'
-                      '🎵 멤버: 공지·스케줄 조율·연습실 예약',
+                      '회장: 모든 기능 + 동아리 관리\n'
+                      '임원진: 공지 작성, 무대 순서 최적화\n'
+                      '멤버: 공지·스케줄 조율·연습실 예약',
                 ),
                 const SizedBox(height: 16),
 
@@ -241,9 +239,9 @@ Future<void> showWelcomeDialog({
                   iconColor: Colors.orange,
                   title: '이런 기능도 있어요',
                   content:
-                      '📢 공지사항: 임원진이 올린 공지 확인\n'
-                      '🎬 무대 순서: AI로 최적 공연 순서 생성\n'
-                      '🏠 연습실 예약: 날짜·시간별 공간 예약\n'
+                      '공지사항: 임원진이 올린 공지 확인\n'
+                      '무대 순서: 최적 공연 순서 생성\n'
+                      '연습실 예약: 날짜·시간별 공간 예약\n'
                       '   (모든 멤버 예약 가능)',
                 ),
                 const SizedBox(height: 24),
@@ -412,7 +410,6 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('🎉', style: TextStyle(fontSize: 48), textAlign: TextAlign.center),
             const SizedBox(height: 24),
             Text(
               '어떤 동아리를 만드시나요?',

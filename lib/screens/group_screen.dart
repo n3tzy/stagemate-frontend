@@ -585,7 +585,7 @@ class _GroupScreenState extends State<GroupScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.search),
-              label: Text(_isLoading ? '찾는 중...' : '✨ 공통 시간 찾기'),
+              label: Text(_isLoading ? '찾는 중...' : '공통 시간 찾기'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),

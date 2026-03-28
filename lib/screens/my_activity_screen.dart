@@ -97,11 +97,21 @@ class _MyActivityScreenState extends State<MyActivityScreen>
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                subtitle: Text(
-                                  '${p['created_at'] ?? ''}  ·  '
-                                  '❤️ ${p['like_count'] ?? 0}  '
-                                  '💬 ${p['comment_count'] ?? 0}',
-                                  style: const TextStyle(fontSize: 12),
+                                subtitle: Row(
+                                  children: [
+                                    Text(
+                                      '${p['created_at'] ?? ''}',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(Icons.favorite_border, size: 12),
+                                    const SizedBox(width: 2),
+                                    Text('${p['like_count'] ?? 0}', style: const TextStyle(fontSize: 12)),
+                                    const SizedBox(width: 8),
+                                    const Icon(Icons.chat_bubble_outline, size: 12),
+                                    const SizedBox(width: 2),
+                                    Text('${p['comment_count'] ?? 0}', style: const TextStyle(fontSize: 12)),
+                                  ],
                                 ),
                               ),
                             );

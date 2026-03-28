@@ -685,4 +685,31 @@ class ApiClient {
     ).timeout(_timeout);
     return _parseResponse(response);
   }
+
+  // ── 아이디 찾기 ────────────────────────────────────
+  static Future<Map<String, dynamic>> findId(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/find-id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  // ── 알림 ──────────────────────────────────────────
+  static Future<Map<String, dynamic>> getNotifications() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/notifications'),
+      headers: await _authOnlyHeaders(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> markNotificationsRead() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/notifications/read-all'),
+      headers: await _authOnlyHeaders(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
 }

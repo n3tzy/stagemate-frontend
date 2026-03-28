@@ -410,7 +410,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🏠 연습실 예약'),
+        title: const Text('연습실 예약'),
         backgroundColor: colorScheme.primaryContainer,
       ),
       body: Padding(

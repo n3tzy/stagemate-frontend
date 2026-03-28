@@ -398,7 +398,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🎭 무대 순서 최적화'),
+        title: const Text('무대 순서 최적화'),
         backgroundColor: colorScheme.primaryContainer,
       ),
       body: SingleChildScrollView(
@@ -460,7 +460,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     subtitle: Text(
                       '👥 ${(song['members'] as List).join(', ')}\n'
                       '⏱ ${_formatTime((song['duration'] as num).toDouble())}'
-                      '  |  📢 소개 ${_formatTime((song['intro_time'] as num?)?.toDouble() ?? 1.5)}',
+                      '  |  소개 ${_formatTime((song['intro_time'] as num?)?.toDouble() ?? 1.5)}',
                     ),
                     isThreeLine: true,
                     trailing: IconButton(
@@ -495,7 +495,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.auto_awesome),
-              label: Text(_isLoading ? '계산 중...' : '✨ 순서 최적화하기'),
+              label: Text(_isLoading ? '계산 중...' : '순서 최적화하기'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),

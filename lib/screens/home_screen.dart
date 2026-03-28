@@ -13,6 +13,7 @@ import 'login_screen.dart';
 import '../api/api_client.dart';
 import 'feed_screen.dart';
 import 'my_activity_screen.dart';
+import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String displayName;
@@ -30,16 +31,39 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   String? _avatarUrl;
+  int _unreadCount = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     ApiClient.getAvatarUrl().then((url) {
       if (mounted) setState(() => _avatarUrl = url);
     });
+    _loadUnreadCount();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadUnreadCount();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    try {
+      final data = await ApiClient.getNotifications();
+      if (mounted) {
+        setState(() => _unreadCount = (data['unread_count'] as int?) ?? 0);
+      }
+    } catch (_) {}
   }
 
   // 역할별 권한 헬퍼
@@ -95,11 +119,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String get _roleLabel {
     switch (widget.role) {
       case 'super_admin':
-        return '👑 회장';
+        return '회장';
       case 'admin':
-        return '⭐ 임원진';
+        return '임원진';
       default:
-        return '🎵 멤버';
+        return '멤버';
     }
   }
 
@@ -684,7 +708,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    '🎭 StageMate',
+                    'StageMate',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
@@ -715,6 +739,44 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
+          // 알림 벨 아이콘
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                  );
+                  _loadUnreadCount();
+                },
+              ),
+              if (_unreadCount > 0)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: _unreadCount < 10 ? BoxShape.circle : BoxShape.rectangle,
+                      borderRadius: _unreadCount >= 10 ? BorderRadius.circular(8) : null,
+                    ),
+                    child: Text(
+                      _unreadCount > 99 ? '99+' : '$_unreadCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.manage_accounts),
             onPressed: _showAccountSheet,
