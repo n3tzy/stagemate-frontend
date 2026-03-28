@@ -125,7 +125,11 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🎭', style: TextStyle(fontSize: 60)),
+            Icon(
+              Icons.theater_comedy_outlined,
+              size: 72,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(height: 16),
             Text(
               'StageMate',
