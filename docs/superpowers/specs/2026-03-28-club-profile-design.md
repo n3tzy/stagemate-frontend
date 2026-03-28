@@ -45,8 +45,14 @@
     "theme_color": "#6750A4"
   }
   ```
-- `theme_color` 유효성 검사: 정규식 `^#[0-9A-Fa-f]{6}$`
-- `logo_url` / `banner_url`: `http://` 또는 `https://`로 시작해야 함. `null`은 허용 (해당 필드 초기화). 빈 문자열 `""`은 400 에러.
+- **club_id 존재 여부 먼저 확인:** 동아리가 없으면 `404 Not Found`. 이후 role 체크에서 super_admin이 아니면 `403 Forbidden`.
+- `theme_color` 유효성 검사: 정규식 `^#[0-9A-Fa-f]{6}$`. 클라이언트는 색상 칩으로 입력을 제한하고, 서버는 defense-in-depth로 추가 검증.
+- `logo_url` / `banner_url` partial update 규칙:
+  - Pydantic 모델에서 `Optional[str] = <sentinel>` 패턴 사용 (`UNSET` sentinel 또는 `model.model_fields_set` 활용)
+  - 필드 **생략** (body에 키 없음) → 변경 없음
+  - 필드 값 **`null`** → 해당 필드를 DB에서 `None`으로 초기화
+  - 필드 값 **빈 문자열 `""`** → 400 에러
+  - 필드 값 **URL** → `http://` 또는 `https://`로 시작해야 함, 아니면 400
 - **응답:** GET과 동일한 형태 반환 (`member_count` 포함):
   ```json
   {
@@ -124,6 +130,7 @@ ListTile(
   ...
 )
 ```
+- `isOwner: false` 하드코딩은 **의도적**. 핫클럽 순위는 다른 동아리 탐색 맥락이므로 편집 버튼 불필요. 본인 동아리 프로필 편집은 `club_manage_screen`에서만 가능.
 
 **`club_manage_screen.dart`:**
 - 상단 섹션에 "동아리 프로필" 카드 추가
@@ -143,9 +150,10 @@ static Future<Map<String, dynamic>> updateClubProfile(int clubId, Map<String, dy
 | 상황 | 처리 |
 |------|------|
 | 이미지 로드 실패 | `errorBuilder`로 아이콘 대체 |
+| club_id 없음 (404) | 시트 닫기 + SnackBar "동아리를 찾을 수 없습니다" |
 | PATCH 권한 없음 (403) | SnackBar "권한이 없습니다" |
 | 네트워크 실패 | SnackBar `friendlyError(e)` |
-| theme_color 형식 오류 | 클라이언트 측 색상 칩 선택이므로 서버 검증만 |
+| theme_color 형식 오류 | 클라이언트는 색상 칩으로 제한, 서버는 regex로 defense-in-depth 검증 |
 
 ---
 
