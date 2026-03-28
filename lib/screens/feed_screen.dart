@@ -4,6 +4,7 @@ import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../api/api_client.dart';
 import 'post_create_screen.dart';
+import 'club_profile_sheet.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -393,6 +394,13 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                               style: const TextStyle(fontSize: 12),
                             ),
                             dense: true,
+                            onTap: club['club_id'] != null
+                                ? () => showClubProfile(
+                                      context,
+                                      club['club_id'] as int,
+                                      isOwner: false,
+                                    )
+                                : null,
                           ),
                         )
                         .toList(),
