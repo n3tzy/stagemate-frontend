@@ -222,6 +222,49 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
     }
   }
 
+  // ── 게시글 홍보(부스트) ──────────────────────────
+  Future<void> _boostPost(dynamic post) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('게시글 홍보'),
+        content: const Text(
+          '홍보 크레딧 1개를 사용해 이 게시글을 전체 채널 상단에 24시간 노출합니다.\n계속할까요?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('홍보하기'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await ApiClient.boostPost(post['id'] as int);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('홍보가 시작됐습니다! 🚀'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadAll();
+      }
+    } catch (e) {
+      if (mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   Widget _buildPostCard(dynamic post, bool isGlobal) {
     final colorScheme = Theme.of(context).colorScheme;
     final isMyPost = (post['author_id'] as int?) == _myUserId;
@@ -274,6 +317,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                       if (v == 'edit') _showEditPostDialog(post, isGlobal);
                       if (v == 'delete') _deletePost(post['id'], isGlobal);
                       if (v == 'report') _showReportDialog(postId: post['id']);
+                      if (v == 'boost') _boostPost(post);
                     },
                     itemBuilder: (_) => [
                       if (isMyPost) ...[
@@ -282,11 +326,44 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                       ] else ...[
                         const PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag_outlined, size: 18), SizedBox(width: 8), Text('신고')])),
                       ],
+                      if (isGlobal && _role == 'super_admin' && !(post['is_boosted'] as bool? ?? false))
+                        const PopupMenuItem(value: 'boost', child: Row(children: [Icon(Icons.rocket_launch, size: 18, color: Colors.orange), SizedBox(width: 8), Text('홍보하기')])),
                     ],
                   ),
                 ],
               ),
               const SizedBox(height: 10),
+              if (post['is_boosted'] as bool? ?? false)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.shade300),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.rocket_launch, size: 12, color: Colors.orange.shade700),
+                            const SizedBox(width: 4),
+                            Text(
+                              '홍보 중',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.orange.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Text(
                 post['content'] ?? '',
                 maxLines: 3,
