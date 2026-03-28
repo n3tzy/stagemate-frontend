@@ -990,7 +990,10 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return DraggableScrollableSheet(
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: DraggableScrollableSheet(
       initialChildSize: 0.6,
       minChildSize: 0.4,
       maxChildSize: 0.95,
@@ -1195,12 +1198,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             decoration: BoxDecoration(
               border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
             ),
-            padding: EdgeInsets.fromLTRB(
-              16,
-              10,
-              16,
-              MediaQuery.of(context).viewInsets.bottom + 10,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
             child: Row(
               children: [
                 Expanded(
@@ -1242,6 +1240,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
