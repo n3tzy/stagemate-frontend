@@ -689,11 +689,19 @@ class ApiClient {
     return _parseResponse(response);
   }
 
-  static Future<Map<String, dynamic>> getPresignedUrl(String filename, String contentType) async {
+  static Future<Map<String, dynamic>> getPresignedUrl(
+    String filename,
+    String contentType, {
+    int? clubId,
+    int fileSizeMb = 0,
+  }) async {
+    var url = '$baseUrl/upload/presigned?filename=${Uri.encodeComponent(filename)}&content_type=${Uri.encodeComponent(contentType)}&file_size_mb=$fileSizeMb';
+    if (clubId != null) url += '&club_id=$clubId';
     final response = await http.get(
-      Uri.parse('$baseUrl/upload/presigned?filename=${Uri.encodeComponent(filename)}&content_type=${Uri.encodeComponent(contentType)}'),
+      Uri.parse(url),
       headers: await _headers(),
     ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('스토리지 용량이 초과됐습니다.');
     return _parseResponse(response);
   }
 
@@ -763,6 +771,77 @@ class ApiClient {
       }
       throw Exception('잘못된 입력입니다.');
     }
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  // ── 구독 / 플랜 ──────────────────────────────────
+  static Future<Map<String, dynamic>> getClubSubscription(int clubId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/$clubId/subscription'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> verifyClubSubscription(
+    int clubId, {
+    required String productId,
+    required String transactionId,
+    required String platform,
+    required String receiptData,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/$clubId/subscription/verify'),
+      headers: await _headers(),
+      body: jsonEncode({
+        'product_id': productId,
+        'transaction_id': transactionId,
+        'platform': platform,
+        'receipt_data': receiptData,
+      }),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode == 409) throw Exception('이미 처리된 구매입니다.');
+    if (response.statusCode == 400) {
+      try {
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        final detail = body['detail'];
+        if (detail is String) throw Exception(detail);
+      } catch (e) {
+        if (e is Exception) rethrow;
+      }
+      throw Exception('잘못된 요청입니다.');
+    }
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> reportStorage(
+    int clubId,
+    String key,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/$clubId/storage/report'),
+      headers: await _headers(),
+      body: jsonEncode({'key': key}),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode >= 500) throw ServerException();
+    return _parseResponse(response);
+  }
+
+  // ── 게시글 홍보(부스트) ──────────────────────────
+  static Future<Map<String, dynamic>> boostPost(int postId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/posts/$postId/boost'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode == 402) throw Exception('홍보 크레딧이 부족합니다.');
+    if (response.statusCode == 409) throw Exception('이미 홍보 중인 게시글입니다.');
     if (response.statusCode >= 500) throw ServerException();
     return jsonDecode(utf8.decode(response.bodyBytes));
   }
