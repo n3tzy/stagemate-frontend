@@ -48,7 +48,7 @@ class ApiClient {
   /// 개발 시: http://127.0.0.1:8000 사용
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://stagemate-backend-production.up.railway.app',
+    defaultValue: 'https://skillful-unity-production-e922.up.railway.app',
   );
 
   static const _storage = FlutterSecureStorage(
