@@ -998,4 +998,18 @@ class ApiClient {
       // fire-and-forget
     }
   }
+
+  static Future<Map<String, dynamic>> toggleCommentLike(
+      int postId, int commentId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/posts/$postId/comments/$commentId/like'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    }
+    if (response.statusCode == 403) throw Exception('권한이 없습니다.');
+    if (response.statusCode >= 500) throw ServerException();
+    throw Exception(_apiError(response, '좋아요 처리에 실패했습니다'));
+  }
 }
