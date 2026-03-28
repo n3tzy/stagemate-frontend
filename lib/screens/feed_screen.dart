@@ -929,6 +929,63 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     }
   }
 
+  Future<void> _toggleLike(dynamic comment) async {
+    final commentId = comment['id'] as int;
+    final wasLiked = comment['is_liked_by_me'] as bool? ?? false;
+    final prevCount = comment['like_count'] as int? ?? 0;
+
+    // Optimistic update
+    setState(() {
+      comment['is_liked_by_me'] = !wasLiked;
+      comment['like_count'] = prevCount + (wasLiked ? -1 : 1);
+    });
+    _recalculateBest();
+
+    try {
+      final result = await ApiClient.toggleCommentLike(
+        widget.post['id'] as int,
+        commentId,
+      );
+      if (mounted) {
+        setState(() {
+          comment['is_liked_by_me'] = result['liked'] as bool;
+          comment['like_count'] = result['like_count'] as int;
+        });
+        _recalculateBest();
+      }
+    } catch (_) {
+      // Revert on error
+      if (mounted) {
+        setState(() {
+          comment['is_liked_by_me'] = wasLiked;
+          comment['like_count'] = prevCount;
+        });
+        _recalculateBest();
+      }
+    }
+  }
+
+  void _recalculateBest() {
+    // Reset all
+    for (final c in _comments) {
+      c['is_best'] = false;
+    }
+    // Find comment with most likes (>= 1); tie-break: first in list (earliest created_at)
+    int maxLikes = 0;
+    dynamic bestComment;
+    for (final c in _comments) {
+      final likes = c['like_count'] as int? ?? 0;
+      if (likes > maxLikes) {
+        maxLikes = likes;
+        bestComment = c;
+      }
+    }
+    if (bestComment != null && maxLikes > 0) {
+      bestComment['is_best'] = true;
+    }
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -1041,16 +1098,35 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                         children: [
                                           Text(
                                             c['author'] ?? '',
-                                            style: const TextStyle(
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 13,
                                             ),
                                           ),
+                                          if (c['is_best'] == true) ...[
+                                            const SizedBox(width: 4),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 6, vertical: 1),
+                                              decoration: BoxDecoration(
+                                                color: Colors.transparent,
+                                                border: Border.all(
+                                                    color: Colors.red, width: 2.0),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Text(
+                                                'BEST',
+                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                  color: Colors.red,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                           const SizedBox(width: 6),
                                           Text(
                                             c['created_at'] ?? '',
-                                            style: TextStyle(
-                                              fontSize: 11,
+                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                               color: colorScheme.outline,
                                             ),
                                           ),
@@ -1059,16 +1135,48 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                                       const SizedBox(height: 2),
                                       Text(
                                         c['content'] ?? '',
-                                        style: const TextStyle(fontSize: 14),
+                                        style: Theme.of(context).textTheme.bodyMedium,
                                       ),
                                     ],
                                   ),
                                 ),
+                                // 좋아요 버튼
+                                GestureDetector(
+                                  onTap: () => _toggleLike(c),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4, vertical: 4),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          (c['is_liked_by_me'] as bool? ?? false)
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          size: 16,
+                                          color: (c['is_liked_by_me'] as bool? ??
+                                                  false)
+                                              ? Colors.red
+                                              : colorScheme.outline,
+                                        ),
+                                        if ((c['like_count'] as int? ?? 0) > 0)
+                                          Text(
+                                            '${c['like_count']}',
+                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              color: colorScheme.outline,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                                 Builder(
                                   builder: (iconContext) => IconButton(
-                                    icon: Icon(Icons.more_vert, size: 16, color: colorScheme.outline),
+                                    icon: Icon(Icons.more_vert,
+                                        size: 16, color: colorScheme.outline),
                                     padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                    constraints: const BoxConstraints(
+                                        minWidth: 32, minHeight: 32),
                                     onPressed: () => _showCommentMenu(
                                       iconContext: iconContext,
                                       comment: c,
