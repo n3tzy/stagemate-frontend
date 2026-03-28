@@ -48,6 +48,7 @@ dependencies:
   cached_network_image: ^3.4.1  # 이미지 캐싱
   video_thumbnail: ^0.5.6
   image_cropper: ^12.1.0
+  in_app_purchase: ^3.2.0
 
 dev_dependencies:
   flutter_test:
