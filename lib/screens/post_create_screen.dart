@@ -114,6 +114,21 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
     }
   }
 
+  // 허용 확장자 → MIME 타입 매핑 (서버 화이트리스트와 동일하게 유지)
+  static const _extToMime = <String, String>{
+    '.jpg':  'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png':  'image/png',
+    '.gif':  'image/gif',
+    '.webp': 'image/webp',
+    '.mp4':  'video/mp4',
+    '.mov':  'video/quicktime',
+    '.webm': 'video/webm',
+  };
+
+  static const _maxImageBytes = 30 * 1024 * 1024;        // 30 MB
+  static const _maxVideoBytes = 1536 * 1024 * 1024;      // 1.5 GB
+
   Future<List<String>> _uploadFiles() async {
     if (_selectedFiles.isEmpty) return [];
     final urls = <String>[];
@@ -121,20 +136,34 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
       try {
         final filename = file.name;
         final lower = filename.toLowerCase();
-        final contentType = lower.endsWith('.mp4')
-            ? 'video/mp4'
-            : lower.endsWith('.mov')
-                ? 'video/quicktime'
-                : lower.endsWith('.avi')
-                    ? 'video/x-msvideo'
-                    : lower.endsWith('.png')
-                        ? 'image/png'
-                        : lower.endsWith('.gif')
-                            ? 'image/gif'
-                            : lower.endsWith('.webp')
-                                ? 'image/webp'
-                                : 'image/jpeg';
-        final isVideo = lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.avi');
+        final dotPos = lower.lastIndexOf('.');
+        final ext = dotPos != -1 ? lower.substring(dotPos) : '';
+
+        // 확장자 화이트리스트 검사
+        final contentType = _extToMime[ext];
+        if (contentType == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('지원하지 않는 파일 형식이에요: $filename')),
+            );
+          }
+          continue;
+        }
+
+        final isVideo = contentType.startsWith('video/');
+        final maxBytes = isVideo ? _maxVideoBytes : _maxImageBytes;
+
+        // 파일 크기 사전 검사
+        final fileSize = await File(file.path).length();
+        if (fileSize > maxBytes) {
+          final limitMb = maxBytes ~/ (1024 * 1024);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('파일이 너무 커요. 최대 ${limitMb}MB까지 업로드할 수 있어요.')),
+            );
+          }
+          continue;
+        }
 
         final presigned = await ApiClient.getPresignedUrl(filename, contentType);
         final uploadUrl = presigned['upload_url'] as String;
