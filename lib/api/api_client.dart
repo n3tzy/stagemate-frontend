@@ -52,9 +52,10 @@ class ApiClient {
   );
 
   static const _storage = FlutterSecureStorage(
-    // iOS: 앱 업데이트/재설치 후에도 Keychain 데이터 유지
+    // iOS: 첫 잠금 해제 후 접근 가능, 기기 이전 시 복사 불가 (보안 강화)
+    // first_unlock_this_device = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
     iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock,
+      accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
     // Android: 암호화된 SharedPreferences 사용
     aOptions: AndroidOptions(
