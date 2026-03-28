@@ -41,11 +41,12 @@ class MyApp extends StatelessWidget {
       ),
       builder: (context, child) {
         final width = MediaQuery.of(context).size.width;
-        // 태블릿(600px 이상)은 텍스트 1.25배, 대형 태블릿(900px 이상)은 1.4배
-        final textScale = width >= 900 ? 1.4 : (width >= 600 ? 1.25 : 1.0);
+        // 시스템 폰트 크기 설정 반영 + 태블릿 추가 확대
+        final systemScale = MediaQuery.textScalerOf(context).scale(1.0);
+        final responsiveScale = width >= 900 ? 1.4 : (width >= 600 ? 1.25 : 1.0);
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(textScale),
+            textScaler: TextScaler.linear(responsiveScale * systemScale),
           ),
           child: child!,
         );
