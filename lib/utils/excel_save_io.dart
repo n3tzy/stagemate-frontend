@@ -6,18 +6,27 @@ import 'dart:io';
 String? saveExcelFile(List<int> bytes, String fileName) {
   try {
     final sep = Platform.pathSeparator;
+    String savePath;
 
-    // 플랫폼별 홈 디렉토리
-    final home = Platform.environment['USERPROFILE'] ?? // Windows
-                 Platform.environment['HOME'] ??         // macOS / Linux
-                 Directory.systemTemp.path;
-
-    // 저장 경로: 홈/Downloads/ (없으면 Documents/)
-    String savePath = '$home${sep}Downloads';
-    if (!Directory(savePath).existsSync()) {
-      savePath = '$home${sep}Documents';
-      if (!Directory(savePath).existsSync()) {
+    if (Platform.isAndroid) {
+      // Android: use public Downloads directory
+      const androidDownloads = '/storage/emulated/0/Download';
+      if (Directory(androidDownloads).existsSync()) {
+        savePath = androidDownloads;
+      } else {
         savePath = Directory.systemTemp.path;
+      }
+    } else {
+      // Windows / macOS / Linux: use home Downloads folder
+      final home = Platform.environment['USERPROFILE'] ?? // Windows
+                   Platform.environment['HOME'] ??         // macOS / Linux
+                   Directory.systemTemp.path;
+      savePath = '$home${sep}Downloads';
+      if (!Directory(savePath).existsSync()) {
+        savePath = '$home${sep}Documents';
+        if (!Directory(savePath).existsSync()) {
+          savePath = Directory.systemTemp.path;
+        }
       }
     }
 
