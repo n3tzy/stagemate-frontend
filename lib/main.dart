@@ -104,23 +104,44 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    // 4. 토큰 유효 — 저장된 사용자 정보 확인
-    final displayName = await ApiClient.getDisplayName();
-    final role = await ApiClient.getRole();
-    final clubName = await ApiClient.getClubName();
-    final clubId = await ApiClient.getClubId();
-
-    if (clubId != null && role != null && clubName != null && displayName != null) {
-      // 토큰 + 동아리 정보 모두 있으면 홈으로
-      _navigateTo(HomeScreen(
-        displayName: displayName,
-        role: role,
-        clubName: clubName,
-      ));
-    } else {
-      // 토큰은 있지만 동아리 미선택 → 온보딩
-      _navigateTo(const ClubOnboardingScreen());
+    // 4. 서버에서 내 동아리 목록 조회
+    final displayName = await ApiClient.getDisplayName() ?? '';
+    List<dynamic> clubs;
+    try {
+      clubs = await ApiClient.getMyClubs();
+    } catch (_) {
+      clubs = [];
     }
+
+    if (clubs.isEmpty) {
+      _navigateTo(const ClubOnboardingScreen());
+      return;
+    }
+
+    // 마지막 사용 동아리 복원
+    final savedClubId = await ApiClient.getClubId();
+    Map<String, dynamic> selectedClub;
+    if (savedClubId != null) {
+      selectedClub = clubs.firstWhere(
+        (c) => c['club_id'] == savedClubId,
+        orElse: () => clubs[0],
+      ) as Map<String, dynamic>;
+    } else {
+      selectedClub = clubs[0] as Map<String, dynamic>;
+    }
+
+    await ApiClient.setClubInfo(
+      (selectedClub['club_id'] as num).toInt(),
+      selectedClub['club_name'] as String,
+      selectedClub['role'] as String,
+    );
+
+    _navigateTo(HomeScreen(
+      displayName: displayName,
+      role: selectedClub['role'] as String,
+      clubName: selectedClub['club_name'] as String,
+      clubs: clubs.cast<Map<String, dynamic>>(),
+    ));
   }
 
   @override

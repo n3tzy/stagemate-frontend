@@ -21,12 +21,14 @@ class HomeScreen extends StatefulWidget {
   final String displayName;
   final String role;
   final String clubName;
+  final List<Map<String, dynamic>> clubs; // 추가
 
   const HomeScreen({
     super.key,
     required this.displayName,
     required this.role,
     required this.clubName,
+    required this.clubs, // 추가
   });
 
   @override
@@ -38,10 +40,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _avatarUrl;
   int _unreadCount = 0;
   bool _notificationsEnabled = true;
+  late String _currentRole;
+  late String _currentClubName;
+  late int _currentClubId;
 
   @override
   void initState() {
     super.initState();
+    _currentRole = widget.role;
+    _currentClubName = widget.clubName;
+    _currentClubId = 0; // _initClub()에서 비동기로 확정
+    _initClub();
     WidgetsBinding.instance.addObserver(this);
     ApiClient.getAvatarUrl().then((url) {
       if (mounted) setState(() => _avatarUrl = url);
@@ -51,6 +60,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     FcmService.init(
       onPostTap: (postId) => setState(() => _currentIndex = 1),
     );
+  }
+
+  Future<void> _initClub() async {
+    final savedClubId = await ApiClient.getClubId();
+    if (savedClubId != null && widget.clubs.isNotEmpty) {
+      final matched = widget.clubs.firstWhere(
+        (c) => (c['club_id'] as num).toInt() == savedClubId,
+        orElse: () => widget.clubs[0],
+      );
+      if (mounted) {
+        setState(() {
+          _currentClubId = (matched['club_id'] as num).toInt();
+          _currentClubName = matched['club_name'] as String;
+          _currentRole = matched['role'] as String;
+        });
+      }
+    } else if (widget.clubs.isNotEmpty) {
+      final first = widget.clubs[0];
+      if (mounted) {
+        setState(() {
+          _currentClubId = (first['club_id'] as num).toInt();
+        });
+      }
+    }
   }
 
   Future<void> _loadNotificationSetting() async {
@@ -85,11 +118,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   // 역할별 권한 헬퍼
-  bool get _isSuperAdmin => widget.role == 'super_admin';
-  bool get _isAdmin => widget.role == 'admin' || _isSuperAdmin;
+  bool get _isSuperAdmin => _currentRole == 'super_admin';
+  bool get _isAdmin => _currentRole == 'admin' || _isSuperAdmin;
   bool get _canOptimizeSchedule => _isAdmin;
   bool get _canManageClub => _isSuperAdmin;
-  bool get _canSubmitAudio => widget.role == 'team_leader' || widget.role == 'admin' || widget.role == 'super_admin';
+  bool get _canSubmitAudio => _currentRole == 'team_leader' || _currentRole == 'admin' || _currentRole == 'super_admin';
 
   // 역할에 따라 탭 화면 구성
   List<Widget> get _screens {
@@ -100,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       const GroupScreen(),
       const BookingScreen(),
       if (_canSubmitAudio)
-        AudioSubmissionScreen(role: widget.role),
+        AudioSubmissionScreen(role: _currentRole),
       if (_canManageClub) const ClubManageScreen(),
     ];
   }
@@ -142,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Color _roleBadgeColor(ColorScheme cs) {
-    switch (widget.role) {
+    switch (_currentRole) {
       case 'super_admin':
         return Colors.amber.shade100;
       case 'admin':
@@ -260,9 +293,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 Navigator.pop(sheetCtx);
                 showWelcomeDialog(
                   context: context,
-                  isCreator: widget.role == 'super_admin',
-                  clubName: widget.clubName,
-                  role: widget.role,
+                  isCreator: _currentRole == 'super_admin',
+                  clubName: _currentClubName,
+                  role: _currentRole,
                 );
               },
             ),
@@ -855,7 +888,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    widget.clubName,
+                    _currentClubName,
                     style: TextStyle(
                       fontSize: 11,
                       color: colorScheme.onPrimaryContainer.withOpacity(0.7),

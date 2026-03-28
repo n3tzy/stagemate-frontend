@@ -245,6 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 displayName: data['display_name'],
                 role: club['role'],
                 clubName: club['club_name'],
+                clubs: clubs.cast<Map<String, dynamic>>(),
               ),
             ),
           );
@@ -292,6 +293,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 displayName: data['display_name'],
                 role: club['role'],
                 clubName: club['club_name'],
+                clubs: clubs.cast<Map<String, dynamic>>(),
               ),
             ),
           );

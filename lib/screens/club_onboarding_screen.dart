@@ -425,6 +425,9 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
     );
     if (!mounted) return;
 
+    final myClubs = await ApiClient.getMyClubs();
+    if (!mounted) return;
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -432,6 +435,7 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
           displayName: displayName,
           role: 'super_admin',
           clubName: _createdClub!['club_name'],
+          clubs: myClubs.cast<Map<String, dynamic>>(),
         ),
       ),
       (route) => false,
@@ -712,6 +716,9 @@ class _ClubJoinScreenState extends State<ClubJoinScreen> {
         );
         if (!mounted) return;
 
+        final myClubs = await ApiClient.getMyClubs();
+        if (!mounted) return;
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
@@ -719,6 +726,7 @@ class _ClubJoinScreenState extends State<ClubJoinScreen> {
               displayName: displayName,
               role: data['role'],
               clubName: data['club_name'],
+              clubs: myClubs.cast<Map<String, dynamic>>(),
             ),
           ),
           (route) => false,
