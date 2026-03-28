@@ -723,4 +723,24 @@ class ApiClient {
     ).timeout(_timeout);
     return _parseResponse(response);
   }
+
+  static Future<Map<String, dynamic>> getClubProfile(int clubId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/$clubId/profile'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> updateClubProfile(
+    int clubId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/clubs/$clubId/profile'),
+      headers: await _headers(),
+      body: jsonEncode(data),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
 }
