@@ -378,7 +378,7 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(data['detail'] ?? '동아리 생성 실패'),
+            content: Text(data['detail'] ?? '동아리를 만들지 못했어요. 잠시 후 다시 시도해 주세요.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -734,7 +734,7 @@ class _ClubJoinScreenState extends State<ClubJoinScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(data['detail'] ?? '참가 실패'),
+            content: Text(data['detail'] ?? '동아리 참가에 실패했어요. 코드를 다시 확인해 주세요.'),
             backgroundColor: Colors.red,
           ),
         );

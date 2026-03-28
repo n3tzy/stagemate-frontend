@@ -805,8 +805,13 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     try {
       final comments = await ApiClient.getPostComments(widget.post['id']);
       setState(() => _comments = comments);
-    } catch (_) {
-      // 댓글 로드 실패 시 무시
+    } catch (e) {
+      if (mounted) {
+        setState(() => _comments = []);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('댓글을 불러오지 못했어요. ${friendlyError(e)}')),
+        );
+      }
     } finally {
       setState(() => _loading = false);
     }
@@ -953,7 +958,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
         });
         _recalculateBest();
       }
-    } catch (_) {
+    } catch (e) {
       // Revert on error
       if (mounted) {
         setState(() {
@@ -961,6 +966,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
           comment['like_count'] = prevCount;
         });
         _recalculateBest();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('좋아요 처리 중 오류가 발생했어요.')),
+        );
       }
     }
   }

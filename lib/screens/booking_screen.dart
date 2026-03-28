@@ -36,7 +36,7 @@ class _BookingScreenState extends State<BookingScreen> {
       setState(() => _bookingData = data);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('불러오기 실패: $e')),
+        SnackBar(content: Text(friendlyError(e))),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -367,13 +367,21 @@ class _BookingScreenState extends State<BookingScreen> {
       ),
     );
     if (confirm == true) {
-      await ApiClient.deleteBooking(id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('예약이 취소됐습니다.')),
-        );
+      try {
+        await ApiClient.deleteBooking(id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('예약이 취소됐습니다.')),
+          );
+        }
+        await _loadBookings();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('예약 취소에 실패했어요. ${friendlyError(e)}')),
+          );
+        }
       }
-      await _loadBookings();
     }
   }
 

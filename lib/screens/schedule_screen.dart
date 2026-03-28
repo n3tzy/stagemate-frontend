@@ -270,7 +270,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       setState(() => _result = result);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('오류 발생: $e')),
+        SnackBar(content: Text(friendlyError(e))),
       );
     } finally {
       setState(() => _isLoading = false);

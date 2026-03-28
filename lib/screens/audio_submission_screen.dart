@@ -855,7 +855,7 @@ class _TeamLeaderSubmitSheetState
       final publicUrl = presigned['public_url'] as String;
       final storageKey = presigned['key'] as String;
 
-      setState(() => _uploadStatus = 'R2에 업로드 중...');
+      setState(() => _uploadStatus = '파일 업로드 중...');
       final bytes = await file.readAsBytes();
       final uploadResponse = await http.put(
         Uri.parse(uploadUrl),

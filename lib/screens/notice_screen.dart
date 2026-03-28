@@ -35,7 +35,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('불러오기 실패: $e')),
+        SnackBar(content: Text(friendlyError(e))),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -90,20 +90,28 @@ class _NoticeScreenState extends State<NoticeScreen> {
               final content = contentController.text.trim();
               if (title.isEmpty || content.isEmpty) return;
 
-              final result = await ApiClient.createNotice(
-                title: title,
-                content: content,
-              );
-              Navigator.pop(dialogContext);
-
-              if (result.containsKey('id')) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('✅ 공지사항이 등록됐습니다!'),
-                    backgroundColor: Colors.green,
-                  ),
+              try {
+                final result = await ApiClient.createNotice(
+                  title: title,
+                  content: content,
                 );
-                await _loadData();
+                Navigator.pop(dialogContext);
+
+                if (result.containsKey('id')) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ 공지사항이 등록됐습니다!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  await _loadData();
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(friendlyError(e))),
+                  );
+                }
               }
             },
             child: const Text('등록'),
@@ -115,7 +123,17 @@ class _NoticeScreenState extends State<NoticeScreen> {
 
   // 공지사항 상세 보기
   Future<void> _showDetail(int id) async {
-    final notice = await ApiClient.getNotice(id);
+    Map<String, dynamic> notice;
+    try {
+      notice = await ApiClient.getNotice(id);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyError(e))),
+        );
+      }
+      return;
+    }
     if (!mounted) return;
 
     await showDialog(
@@ -275,8 +293,13 @@ class _NoticeDetailDialogState extends State<_NoticeDetailDialog> {
     try {
       final comments = await ApiClient.getComments(widget.notice['id']);
       setState(() => _comments = comments);
-    } catch (_) {
-      // 댓글 로드 실패 시 빈 목록 유지
+    } catch (e) {
+      if (mounted) {
+        setState(() => _comments = []);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('댓글을 불러오지 못했어요. ${friendlyError(e)}')),
+        );
+      }
     } finally {
       setState(() => _loadingComments = false);
     }

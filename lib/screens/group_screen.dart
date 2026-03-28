@@ -59,7 +59,7 @@ class _GroupScreenState extends State<GroupScreen> {
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('불러오기 실패: $e')),
+        SnackBar(content: Text(friendlyError(e))),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -245,7 +245,7 @@ class _GroupScreenState extends State<GroupScreen> {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('저장 실패: $e'),
+                          content: Text(friendlyError(e)),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -295,7 +295,7 @@ class _GroupScreenState extends State<GroupScreen> {
         await _loadAvailability();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('삭제 실패: $e')),
+          SnackBar(content: Text(friendlyError(e))),
         );
       }
     }
@@ -318,7 +318,7 @@ class _GroupScreenState extends State<GroupScreen> {
       setState(() => _result = result);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('오류 발생: $e')),
+        SnackBar(content: Text(friendlyError(e))),
       );
     } finally {
       setState(() => _isLoading = false);

@@ -41,7 +41,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('초대 코드 불러오기 실패: $e')),
+          SnackBar(content: Text('초대 코드를 불러오지 못했어요. ${friendlyError(e)}')),
         );
       }
     } finally {
@@ -69,7 +69,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('멤버 목록 불러오기 실패: $e')),
+          SnackBar(content: Text('멤버 목록을 불러오지 못했어요. ${friendlyError(e)}')),
         );
       }
     } finally {
@@ -148,7 +148,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('역할 변경 실패: $e')),
+          SnackBar(content: Text('역할 변경에 실패했어요. ${friendlyError(e)}')),
         );
       }
     }
@@ -260,7 +260,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('임시 비밀번호 발급 실패: $e')),
+          SnackBar(content: Text('임시 비밀번호 발급에 실패했어요. ${friendlyError(e)}')),
         );
       }
     }
@@ -306,7 +306,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('강제탈퇴 실패: $e')),
+          SnackBar(content: Text('멤버 내보내기에 실패했어요. ${friendlyError(e)}')),
         );
       }
     }
