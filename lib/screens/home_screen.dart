@@ -185,6 +185,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  String _roleLabel(String role) {
+    switch (role) {
+      case 'super_admin': return '회장';
+      case 'admin':       return '임원진';
+      case 'team_leader': return '팀장';
+      default:            return '멤버';
+    }
+  }
+
   Future<void> _logout() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -887,13 +896,56 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     'StageMate',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  Text(
-                    _currentClubName,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                  if (widget.clubs.length >= 2)
+                    GestureDetector(
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                          ),
+                          builder: (_) => _ClubSwitcherSheet(
+                            clubs: widget.clubs,
+                            currentClubId: _currentClubId,
+                            onSelect: (club) async {
+                              await ApiClient.setClubInfo(
+                                (club['club_id'] as num).toInt(),
+                                club['club_name'] as String,
+                                club['role'] as String,
+                              );
+                              setState(() {
+                                _currentClubId = (club['club_id'] as num).toInt();
+                                _currentClubName = club['club_name'] as String;
+                                _currentRole = club['role'] as String;
+                              });
+                            },
+                          ),
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.swap_horiz, size: 12, color: Colors.white70),
+                          const SizedBox(width: 3),
+                          Text(
+                            '$_currentClubName · ${_roleLabel(_currentRole)}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: colorScheme.onPrimaryContainer.withOpacity(0.85),
+                            ),
+                          ),
+                          const Icon(Icons.expand_more, size: 13, color: Colors.white70),
+                        ],
+                      ),
+                    )
+                  else
+                    Text(
+                      _currentClubName,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -979,6 +1031,142 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const Divider(height: 1, thickness: 1),
           _buildBottomNav(context),
         ],
+      ),
+    );
+  }
+}
+
+class _ClubSwitcherSheet extends StatelessWidget {
+  final List<Map<String, dynamic>> clubs;
+  final int currentClubId;
+  final Future<void> Function(Map<String, dynamic> club) onSelect;
+
+  const _ClubSwitcherSheet({
+    required this.clubs,
+    required this.currentClubId,
+    required this.onSelect,
+  });
+
+  String _roleLabel(String role) {
+    switch (role) {
+      case 'super_admin': return '회장';
+      case 'admin':       return '임원진';
+      case 'team_leader': return '팀장';
+      default:            return '멤버';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 32,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text('동아리 선택',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('입장할 동아리를 선택하세요',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.grey)),
+            const SizedBox(height: 14),
+            ...clubs.map((club) {
+              final isSelected = (club['club_id'] as num).toInt() == currentClubId;
+              return GestureDetector(
+                onTap: isSelected
+                    ? null
+                    : () async {
+                        Navigator.pop(context);
+                        await onSelect(club);
+                      },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? colorScheme.primaryContainer
+                        : Colors.grey[50],
+                    border: Border.all(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : Colors.grey[200]!,
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colorScheme.primary
+                              : Colors.grey[400],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.theater_comedy,
+                            color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              club['club_name'] as String,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              _roleLabel(club['role'] as String),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: isSelected
+                                        ? colorScheme.primary
+                                        : Colors.grey,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        isSelected ? Icons.check : Icons.chevron_right,
+                        color: isSelected
+                            ? colorScheme.primary
+                            : Colors.grey,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
