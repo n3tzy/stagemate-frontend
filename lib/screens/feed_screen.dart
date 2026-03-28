@@ -220,7 +220,10 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                     scrollDirection: Axis.horizontal,
                     itemCount: mediaUrls.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 6),
-                    itemBuilder: (_, i) => _MediaThumbnail(url: mediaUrls[i] as String),
+                    itemBuilder: (_, i) => _MediaThumbnail(
+                      urls: mediaUrls.cast<String>(),
+                      index: i,
+                    ),
                   ),
                 ),
               ],
@@ -557,7 +560,8 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                       itemCount: (widget.post['media_urls'] as List).length,
                       separatorBuilder: (_, __) => const SizedBox(width: 6),
                       itemBuilder: (_, i) => _MediaThumbnail(
-                        url: (widget.post['media_urls'] as List)[i] as String,
+                        urls: (widget.post['media_urls'] as List).cast<String>(),
+                        index: i,
                       ),
                     ),
                   ),
@@ -715,10 +719,15 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 
 // ── 미디어 썸네일 (사진/영상 공통) ────────────────────
 class _MediaThumbnail extends StatefulWidget {
-  final String url;
+  final List<String> urls;
+  final int index;
   final double size;
 
-  const _MediaThumbnail({required this.url, this.size = 160});
+  const _MediaThumbnail({
+    required this.urls,
+    required this.index,
+    this.size = 160,
+  });
 
   static bool isVideo(String u) {
     final l = u.toLowerCase();
@@ -734,20 +743,20 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
   Uint8List? _thumbData;
   bool _thumbError = false;
 
+  String get _url => widget.urls[widget.index];
+
   @override
   void initState() {
     super.initState();
-    if (_MediaThumbnail.isVideo(widget.url)) {
-      _loadThumb();
-    }
+    if (_MediaThumbnail.isVideo(_url)) _loadThumb();
   }
 
   Future<void> _loadThumb() async {
     try {
       final data = await VideoThumbnail.thumbnailData(
-        video: widget.url,
+        video: _url,
         imageFormat: ImageFormat.JPEG,
-        maxWidth: widget.size.toInt() * 2, // 레티나 대응
+        maxWidth: widget.size.toInt() * 2,
         quality: 70,
       );
       if (mounted) setState(() => _thumbData = data);
@@ -758,16 +767,17 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
 
   @override
   Widget build(BuildContext context) {
-    final isVid = _MediaThumbnail.isVideo(widget.url);
+    final isVid = _MediaThumbnail.isVideo(_url);
     final sz = widget.size;
 
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => isVid
-              ? _VideoPlayerScreen(url: widget.url)
-              : _PhotoViewScreen(url: widget.url),
+          builder: (_) => _MediaViewerScreen(
+            urls: widget.urls,
+            initialIndex: widget.index,
+          ),
         ),
       ),
       child: ClipRRect(
@@ -775,13 +785,8 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
         child: isVid
             ? Stack(
                 children: [
-                  // 썸네일 or 플레이스홀더
                   _thumbData != null
-                      ? Image.memory(
-                          _thumbData!,
-                          width: sz, height: sz,
-                          fit: BoxFit.cover,
-                        )
+                      ? Image.memory(_thumbData!, width: sz, height: sz, fit: BoxFit.cover)
                       : Container(
                           width: sz, height: sz,
                           color: Colors.black87,
@@ -790,27 +795,20 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
                               : const Center(
                                   child: SizedBox(
                                     width: 24, height: 24,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white54, strokeWidth: 2,
-                                    ),
+                                    child: CircularProgressIndicator(color: Colors.white54, strokeWidth: 2),
                                   ),
                                 ),
                         ),
-                  // 재생 아이콘 오버레이
                   Positioned.fill(
                     child: Container(
                       color: Colors.black26,
-                      child: const Icon(
-                        Icons.play_circle_fill,
-                        color: Colors.white,
-                        size: 44,
-                      ),
+                      child: const Icon(Icons.play_circle_fill, color: Colors.white, size: 44),
                     ),
                   ),
                 ],
               )
             : Image.network(
-                widget.url,
+                _url,
                 width: sz, height: sz,
                 fit: BoxFit.cover,
                 loadingBuilder: (_, child, progress) => progress == null
@@ -818,9 +816,7 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
                     : Container(
                         width: sz, height: sz,
                         color: Colors.grey.shade200,
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
+                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                       ),
                 errorBuilder: (_, __, ___) => Container(
                   width: sz, height: sz,
@@ -833,11 +829,33 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
   }
 }
 
-// ── 사진 전체화면 뷰어 ────────────────────────────────
-class _PhotoViewScreen extends StatelessWidget {
-  final String url;
+// ── 슬라이드 미디어 뷰어 ──────────────────────────────
+class _MediaViewerScreen extends StatefulWidget {
+  final List<String> urls;
+  final int initialIndex;
 
-  const _PhotoViewScreen({required this.url});
+  const _MediaViewerScreen({required this.urls, required this.initialIndex});
+
+  @override
+  State<_MediaViewerScreen> createState() => _MediaViewerScreenState();
+}
+
+class _MediaViewerScreenState extends State<_MediaViewerScreen> {
+  late final PageController _pageCtrl;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageCtrl = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -847,25 +865,54 @@ class _PhotoViewScreen extends StatelessWidget {
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
+        // n / total 표시
+        title: widget.urls.length > 1
+            ? Text(
+                '${_currentIndex + 1} / ${widget.urls.length}',
+                style: const TextStyle(color: Colors.white, fontSize: 15),
+              )
+            : null,
+        centerTitle: true,
       ),
-      body: Center(
-        child: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 5.0,
-          child: Image.network(
-            url,
-            fit: BoxFit.contain,
-            loadingBuilder: (_, child, progress) => progress == null
-                ? child
-                : const CircularProgressIndicator(color: Colors.white),
-            errorBuilder: (_, __, ___) => const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.broken_image, color: Colors.white54, size: 64),
-                SizedBox(height: 8),
-                Text('이미지를 불러올 수 없어요', style: TextStyle(color: Colors.white54)),
-              ],
-            ),
+      body: PageView.builder(
+        controller: _pageCtrl,
+        itemCount: widget.urls.length,
+        onPageChanged: (i) => setState(() => _currentIndex = i),
+        itemBuilder: (_, i) {
+          final url = widget.urls[i];
+          return _MediaThumbnail.isVideo(url)
+              ? _VideoPage(url: url, isActive: i == _currentIndex)
+              : _PhotoPage(url: url);
+        },
+      ),
+    );
+  }
+}
+
+// ── 사진 페이지 (핀치 줌) ─────────────────────────────
+class _PhotoPage extends StatelessWidget {
+  final String url;
+  const _PhotoPage({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return InteractiveViewer(
+      minScale: 0.5,
+      maxScale: 5.0,
+      child: Center(
+        child: Image.network(
+          url,
+          fit: BoxFit.contain,
+          loadingBuilder: (_, child, progress) => progress == null
+              ? child
+              : const Center(child: CircularProgressIndicator(color: Colors.white)),
+          errorBuilder: (_, __, ___) => const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.broken_image, color: Colors.white54, size: 64),
+              SizedBox(height: 8),
+              Text('이미지를 불러올 수 없어요', style: TextStyle(color: Colors.white54)),
+            ],
           ),
         ),
       ),
@@ -873,17 +920,17 @@ class _PhotoViewScreen extends StatelessWidget {
   }
 }
 
-// ── 영상 플레이어 화면 ────────────────────────────────
-class _VideoPlayerScreen extends StatefulWidget {
+// ── 영상 페이지 ───────────────────────────────────────
+class _VideoPage extends StatefulWidget {
   final String url;
-
-  const _VideoPlayerScreen({required this.url});
+  final bool isActive;
+  const _VideoPage({required this.url, required this.isActive});
 
   @override
-  State<_VideoPlayerScreen> createState() => _VideoPlayerScreenState();
+  State<_VideoPage> createState() => _VideoPageState();
 }
 
-class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
+class _VideoPageState extends State<_VideoPage> {
   late final VideoPlayerController _ctrl;
   bool _initialized = false;
   bool _error = false;
@@ -895,13 +942,19 @@ class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
       ..initialize().then((_) {
         if (!mounted) return;
         setState(() => _initialized = true);
-        _ctrl.play();
+        if (widget.isActive) _ctrl.play();
       }).catchError((_) {
         if (mounted) setState(() => _error = true);
       });
-    _ctrl.addListener(() {
-      if (mounted) setState(() {});
-    });
+    _ctrl.addListener(() { if (mounted) setState(() {}); });
+  }
+
+  @override
+  void didUpdateWidget(_VideoPage old) {
+    super.didUpdateWidget(old);
+    if (old.isActive != widget.isActive) {
+      widget.isActive ? _ctrl.play() : _ctrl.pause();
+    }
   }
 
   @override
@@ -910,7 +963,7 @@ class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
     super.dispose();
   }
 
-  String _fmtDuration(Duration d) {
+  String _fmt(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
@@ -918,77 +971,58 @@ class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: Center(
-          child: _error
-              ? const Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.error_outline, color: Colors.white54, size: 64),
-                    SizedBox(height: 12),
-                    Text('영상을 불러올 수 없어요', style: TextStyle(color: Colors.white54)),
-                  ],
-                )
-              : !_initialized
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AspectRatio(
-                          aspectRatio: _ctrl.value.aspectRatio,
-                          child: VideoPlayer(_ctrl),
-                        ),
-                        const SizedBox(height: 8),
-                        // 진행 바
-                        VideoProgressIndicator(
-                          _ctrl,
-                          allowScrubbing: true,
-                          colors: const VideoProgressColors(
-                            playedColor: Colors.white,
-                            bufferedColor: Colors.white30,
-                            backgroundColor: Colors.white12,
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                        ),
-                        // 시간 표시
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _fmtDuration(_ctrl.value.position),
-                                style: const TextStyle(color: Colors.white70, fontSize: 12),
-                              ),
-                              Text(
-                                _fmtDuration(_ctrl.value.duration),
-                                style: const TextStyle(color: Colors.white70, fontSize: 12),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // 재생/일시정지
-                        IconButton(
-                          onPressed: () => _ctrl.value.isPlaying
-                              ? _ctrl.pause()
-                              : _ctrl.play(),
-                          icon: Icon(
-                            _ctrl.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                            color: Colors.white,
-                            size: 56,
-                          ),
-                        ),
-                      ],
-                    ),
+    if (_error) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, color: Colors.white54, size: 64),
+            SizedBox(height: 12),
+            Text('영상을 불러올 수 없어요', style: TextStyle(color: Colors.white54)),
+          ],
         ),
-      ),
+      );
+    }
+    if (!_initialized) {
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
+    }
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        AspectRatio(
+          aspectRatio: _ctrl.value.aspectRatio,
+          child: VideoPlayer(_ctrl),
+        ),
+        const SizedBox(height: 8),
+        VideoProgressIndicator(
+          _ctrl,
+          allowScrubbing: true,
+          colors: const VideoProgressColors(
+            playedColor: Colors.white,
+            bufferedColor: Colors.white30,
+            backgroundColor: Colors.white12,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(_fmt(_ctrl.value.position), style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              Text(_fmt(_ctrl.value.duration), style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: () => _ctrl.value.isPlaying ? _ctrl.pause() : _ctrl.play(),
+          icon: Icon(
+            _ctrl.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+            color: Colors.white,
+            size: 56,
+          ),
+        ),
+      ],
     );
   }
 }
