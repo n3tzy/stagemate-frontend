@@ -151,6 +151,7 @@ static Future<Map<String, dynamic>> updateClubProfile(int clubId, Map<String, dy
 |------|------|
 | 이미지 로드 실패 | `errorBuilder`로 아이콘 대체 |
 | club_id 없음 (404) | 시트 닫기 + SnackBar "동아리를 찾을 수 없습니다" |
+| PATCH 잘못된 입력 (400) | SnackBar `friendlyError(e)` (URL 형식 오류 등) |
 | PATCH 권한 없음 (403) | SnackBar "권한이 없습니다" |
 | 네트워크 실패 | SnackBar `friendlyError(e)` |
 | theme_color 형식 오류 | 클라이언트는 색상 칩으로 제한, 서버는 regex로 defense-in-depth 검증 |
