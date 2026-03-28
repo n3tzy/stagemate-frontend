@@ -347,6 +347,19 @@ class ClubCreateScreen extends StatefulWidget {
 class _ClubCreateScreenState extends State<ClubCreateScreen> {
   final _nameController = TextEditingController();
   bool _isLoading = false;
+  int _step = 1;
+
+  // Step 2 state
+  Map<String, dynamic>? _createdClub;   // API response from createClub
+  final _logoUrlController = TextEditingController();
+  bool _isSavingLogo = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _logoUrlController.dispose();
+    super.dispose();
+  }
 
   Future<void> _createClub() async {
     final name = _nameController.text.trim();
@@ -358,28 +371,10 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
       if (!mounted) return;
 
       if (data.containsKey('club_id')) {
-        final displayName = await ApiClient.getDisplayName() ?? '';
-
-        // ── 환영 알림창 표시 ──
-        await showWelcomeDialog(
-          context: context,
-          isCreator: true,
-          clubName: data['club_name'],
-          role: 'super_admin',
-        );
-        if (!mounted) return;
-
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) => HomeScreen(
-              displayName: displayName,
-              role: 'super_admin',
-              clubName: data['club_name'],
-            ),
-          ),
-          (route) => false,
-        );
+        setState(() {
+          _createdClub = data;
+          _step = 2;
+        });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -399,8 +394,56 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
     }
   }
 
+  Future<void> _finishOnboarding({bool saveLogo = false}) async {
+    if (_createdClub == null) return;
+
+    if (saveLogo) {
+      final logoUrl = _logoUrlController.text.trim();
+      if (logoUrl.isNotEmpty) {
+        setState(() => _isSavingLogo = true);
+        try {
+          await ApiClient.updateClubProfile(_createdClub!['club_id'], {
+            'logo_url': logoUrl,
+          });
+        } catch (_) {
+          // 로고 저장 실패 시 무시하고 진행
+        } finally {
+          if (mounted) setState(() => _isSavingLogo = false);
+        }
+      }
+    }
+
+    if (!mounted) return;
+
+    final displayName = await ApiClient.getDisplayName() ?? '';
+
+    await showWelcomeDialog(
+      context: context,
+      isCreator: true,
+      clubName: _createdClub!['club_name'],
+      role: 'super_admin',
+    );
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(
+          displayName: displayName,
+          role: 'super_admin',
+          clubName: _createdClub!['club_name'],
+        ),
+      ),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    return _step == 1 ? _buildStep1(context) : _buildStep2(context);
+  }
+
+  Widget _buildStep1(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -410,6 +453,16 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const SizedBox(height: 24),
+            // Step indicator
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _StepDot(active: true, label: '1'),
+                Container(width: 32, height: 2, color: colorScheme.outlineVariant),
+                _StepDot(active: false, label: '2'),
+              ],
+            ),
             const SizedBox(height: 24),
             Text(
               '어떤 동아리를 만드시나요?',
@@ -462,8 +515,8 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.add),
-              label: Text(_isLoading ? '생성 중...' : '동아리 만들기'),
+                  : const Icon(Icons.arrow_forward),
+              label: Text(_isLoading ? '생성 중...' : '다음'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -483,8 +536,137 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
       ),
     );
   }
+
+  Widget _buildStep2(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('동아리 만들기'),
+        automaticallyImplyLeading: false,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 24),
+            // Step indicator
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _StepDot(active: false, label: '1'),
+                Container(
+                  width: 32,
+                  height: 2,
+                  color: colorScheme.primary,
+                ),
+                _StepDot(active: true, label: '2'),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Success badge
+            Center(
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.check_circle,
+                    size: 48, color: Colors.green.shade700),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '\'${_createdClub?['club_name']}\' 생성 완료!',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '로고 URL을 추가해서 동아리를 꾸며보세요 (선택)',
+              style: TextStyle(color: colorScheme.outline),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            TextField(
+              controller: _logoUrlController,
+              decoration: const InputDecoration(
+                labelText: '로고 이미지 URL (선택)',
+                hintText: 'https://example.com/logo.png',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.image_outlined),
+              ),
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: (_isLoading || _isSavingLogo)
+                  ? null
+                  : () => _finishOnboarding(saveLogo: true),
+              icon: (_isSavingLogo)
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check),
+              label: Text(_isSavingLogo ? '저장 중...' : '완료'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: (_isLoading || _isSavingLogo)
+                  ? null
+                  : () => _finishOnboarding(saveLogo: false),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text('나중에'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
+// ── 스텝 인디케이터 점 ──────────────────────────────
+class _StepDot extends StatelessWidget {
+  final bool active;
+  final String label;
+
+  const _StepDot({required this.active, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: active ? colorScheme.primary : colorScheme.outlineVariant,
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? colorScheme.onPrimary : colorScheme.outline,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 // ── 초대 코드로 참가 화면 ───────────────────────────
 class ClubJoinScreen extends StatefulWidget {
