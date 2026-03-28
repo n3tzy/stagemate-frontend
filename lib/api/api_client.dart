@@ -51,7 +51,16 @@ class ApiClient {
     defaultValue: 'https://stagemate-backend-production.up.railway.app',
   );
 
-  static const _storage = FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage(
+    // iOS: 앱 업데이트/재설치 후에도 Keychain 데이터 유지
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock,
+    ),
+    // Android: 암호화된 SharedPreferences 사용
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+  );
   static const _timeout = Duration(seconds: 30);
 
   // ── 토큰 유효성 (클라이언트 측) ──────────────────────
