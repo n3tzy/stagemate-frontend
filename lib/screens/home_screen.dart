@@ -141,18 +141,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     ];
   }
 
-  // 역할 표시 정보
-  String get _roleLabel {
-    switch (widget.role) {
-      case 'super_admin':
-        return '회장';
-      case 'admin':
-        return '임원진';
-      default:
-        return '멤버';
-    }
-  }
-
   Color _roleBadgeColor(ColorScheme cs) {
     switch (widget.role) {
       case 'super_admin':
@@ -758,10 +746,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final colorScheme = Theme.of(context).colorScheme;
     final destinations = _destinations;
     const minItemWidth = 68.0;
-    return Container(
-      color: colorScheme.surfaceContainer,
-      height: 72,
-      child: LayoutBuilder(
+    return SafeArea(
+      top: false,
+      child: Container(
+        color: colorScheme.surfaceContainer,
+        height: 72,
+        child: LayoutBuilder(
         builder: (context, constraints) {
           // 화면 너비를 아이템 수로 나눠서 균등 배분, 최소 68px 보장
           final itemWidth = (constraints.maxWidth / destinations.length)
@@ -794,6 +784,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           );
         },
       ),
+      ),
     );
   }
 
@@ -805,7 +796,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: Duration.zero,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: _currentIndex == i
@@ -882,8 +873,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '$_roleLabel  ${widget.displayName}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  widget.displayName,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
