@@ -855,14 +855,32 @@ class ApiClient {
   }
 
   // ── 음원 제출 게시판 ──────────────────────────
+
+  /// 응답 body에서 에러 메시지 추출 헬퍼
+  static String _apiError(http.Response res, String fallback) {
+    try {
+      final b = jsonDecode(utf8.decode(res.bodyBytes));
+      final d = b['detail'];
+      if (d is String) return d;
+      if (d is List && d.isNotEmpty) {
+        final first = d.first;
+        return (first is Map ? first['msg']?.toString() : first.toString()) ?? fallback;
+      }
+    } catch (_) {}
+    return '$fallback (${res.statusCode})';
+  }
+
   static Future<List<dynamic>> getPerformances(int clubId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/clubs/$clubId/performances'),
       headers: await _headers(),
     ).timeout(_timeout);
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes)) as List;
+    }
     if (response.statusCode == 403) throw Exception('권한이 없습니다.');
     if (response.statusCode >= 500) throw ServerException();
-    return jsonDecode(utf8.decode(response.bodyBytes)) as List;
+    throw Exception(_apiError(response, '공연 목록을 불러오지 못했습니다'));
   }
 
   static Future<Map<String, dynamic>> createPerformance(
@@ -879,9 +897,12 @@ class ApiClient {
       headers: await _headers(),
       body: jsonEncode(body),
     ).timeout(_timeout);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    }
     if (response.statusCode == 403) throw Exception('권한이 없습니다.');
     if (response.statusCode >= 500) throw ServerException();
-    return jsonDecode(utf8.decode(response.bodyBytes));
+    throw Exception(_apiError(response, '공연 등록에 실패했습니다'));
   }
 
   static Future<void> deletePerformance(int clubId, int perfId) async {
@@ -889,9 +910,11 @@ class ApiClient {
       Uri.parse('$baseUrl/clubs/$clubId/performances/$perfId'),
       headers: await _headers(),
     ).timeout(_timeout);
+    if (response.statusCode == 200 || response.statusCode == 204) return;
     if (response.statusCode == 403) throw Exception('권한이 없습니다.');
     if (response.statusCode == 404) throw Exception('공연을 찾을 수 없습니다.');
     if (response.statusCode >= 500) throw ServerException();
+    throw Exception(_apiError(response, '공연 삭제에 실패했습니다'));
   }
 
   static Future<List<dynamic>> getSubmissions(int clubId, int perfId) async {
@@ -899,9 +922,12 @@ class ApiClient {
       Uri.parse('$baseUrl/clubs/$clubId/performances/$perfId/submissions'),
       headers: await _headers(),
     ).timeout(_timeout);
+    if (response.statusCode == 200) {
+      return jsonDecode(utf8.decode(response.bodyBytes)) as List;
+    }
     if (response.statusCode == 403) throw Exception('권한이 없습니다.');
     if (response.statusCode >= 500) throw ServerException();
-    return jsonDecode(utf8.decode(response.bodyBytes)) as List;
+    throw Exception(_apiError(response, '제출 목록을 불러오지 못했습니다'));
   }
 
   static Future<Map<String, dynamic>?> getMySubmission(
@@ -910,10 +936,13 @@ class ApiClient {
       Uri.parse('$baseUrl/clubs/$clubId/performances/$perfId/submissions/mine'),
       headers: await _headers(),
     ).timeout(_timeout);
+    if (response.statusCode == 200) {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return body['submission'] as Map<String, dynamic>?;
+    }
     if (response.statusCode == 403) throw Exception('권한이 없습니다.');
     if (response.statusCode >= 500) throw ServerException();
-    final body = jsonDecode(utf8.decode(response.bodyBytes));
-    return body['submission'] as Map<String, dynamic>?;
+    throw Exception(_apiError(response, '내 제출 정보를 불러오지 못했습니다'));
   }
 
   static Future<Map<String, dynamic>> submitAudio(
@@ -934,23 +963,13 @@ class ApiClient {
         'file_size_mb': fileSizeMb,
       }),
     ).timeout(_timeout);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    }
     if (response.statusCode == 403) throw Exception('권한이 없습니다.');
     if (response.statusCode == 404) throw Exception('공연을 찾을 수 없습니다.');
-    if (response.statusCode == 400) {
-      try {
-        final b = jsonDecode(utf8.decode(response.bodyBytes));
-        final detail = b['detail'];
-        if (detail is String) throw Exception(detail);
-        if (detail is List && detail.isNotEmpty) {
-          throw Exception((detail.first['msg'] as String?) ?? '잘못된 입력입니다.');
-        }
-      } catch (e) {
-        if (e is Exception) rethrow;
-      }
-      throw Exception('잘못된 입력입니다.');
-    }
     if (response.statusCode >= 500) throw ServerException();
-    return jsonDecode(utf8.decode(response.bodyBytes));
+    throw Exception(_apiError(response, '음원 제출에 실패했습니다'));
   }
 
   static Future<void> deleteSubmission(
@@ -960,8 +979,21 @@ class ApiClient {
           '$baseUrl/clubs/$clubId/performances/$perfId/submissions/$subId'),
       headers: await _headers(),
     ).timeout(_timeout);
+    if (response.statusCode == 200 || response.statusCode == 204) return;
     if (response.statusCode == 403) throw Exception('본인의 제출만 삭제할 수 있습니다.');
     if (response.statusCode == 404) throw Exception('제출을 찾을 수 없습니다.');
     if (response.statusCode >= 500) throw ServerException();
+    throw Exception(_apiError(response, '제출 삭제에 실패했습니다'));
+  }
+
+  static Future<void> updateFcmToken(String token) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/users/me/fcm-token'),
+      headers: await _headers(),
+      body: jsonEncode({'token': token}),
+    ).timeout(_timeout);
+    if (response.statusCode == 200 || response.statusCode == 204) return;
+    if (response.statusCode >= 500) throw ServerException();
+    throw Exception(_apiError(response, 'FCM 토큰 등록에 실패했습니다'));
   }
 }

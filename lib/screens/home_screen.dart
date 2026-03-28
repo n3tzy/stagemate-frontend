@@ -11,6 +11,7 @@ import 'club_manage_screen.dart';
 import 'club_onboarding_screen.dart';
 import 'login_screen.dart';
 import '../api/api_client.dart';
+import '../services/fcm_service.dart';
 import 'feed_screen.dart';
 import 'my_activity_screen.dart';
 import 'notifications_screen.dart';
@@ -47,6 +48,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
     _loadUnreadCount();
     _loadNotificationSetting();
+    FcmService.init(
+      onPostTap: (postId) => setState(() => _currentIndex = 1),
+    );
   }
 
   Future<void> _loadNotificationSetting() async {
