@@ -562,6 +562,18 @@ class _CommentsSheetState extends State<_CommentsSheet> {
   }
 
   Future<void> _delete(int commentId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('댓글 삭제'),
+        content: const Text('이 댓글을 삭제할까요?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (confirm != true) return;
     try {
       await ApiClient.deletePostComment(widget.post['id'], commentId);
       await _load();
