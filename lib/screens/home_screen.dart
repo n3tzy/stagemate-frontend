@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'schedule_screen.dart';
@@ -419,13 +420,37 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    // 1. 이미지 선택
     final file = await picker.pickImage(
       source: choice == 'camera' ? ImageSource.camera : ImageSource.gallery,
-      imageQuality: 80,
-      maxWidth: 512,
-      maxHeight: 512,
+      imageQuality: 90,
     );
     if (file == null) return;
+
+    // 2. 크롭 화면 표시 (1:1 정사각형)
+    final colorScheme = Theme.of(context).colorScheme;
+    final cropped = await ImageCropper().cropImage(
+      sourcePath: file.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressQuality: 85,
+      compressFormat: ImageCompressFormat.jpg,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: '프로필 사진 편집',
+          toolbarColor: colorScheme.primary,
+          toolbarWidgetColor: Colors.white,
+          activeControlsWidgetColor: colorScheme.primary,
+          lockAspectRatio: true,
+          hideBottomControls: false,
+        ),
+        IOSUiSettings(
+          title: '프로필 사진 편집',
+          aspectRatioLockEnabled: true,
+          resetAspectRatioEnabled: false,
+        ),
+      ],
+    );
+    if (cropped == null) return; // 크롭 취소
 
     // 로딩 표시
     if (mounted) {
@@ -440,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final uploadUrl = presigned['upload_url'] as String;
       final publicUrl = presigned['public_url'] as String;
 
-      final bytes = await File(file.path).readAsBytes();
+      final bytes = await File(cropped.path).readAsBytes();
       final res = await http.put(
         Uri.parse(uploadUrl),
         headers: {'Content-Type': 'image/jpeg'},
