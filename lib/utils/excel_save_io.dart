@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'download_notification.dart';
 
 /// 비웹 전용 (Windows / Android / iOS / macOS / Linux):
 /// 다운로드 폴더에 파일을 저장하고 경로를 반환
@@ -32,6 +33,13 @@ String? saveExcelFile(List<int> bytes, String fileName) {
 
     final filePath = '$savePath$sep$fileName';
     File(filePath).writeAsBytesSync(bytes);
+
+    // 알림 표시 (비동기, 실패해도 무시)
+    showDownloadNotification(
+      filePath: filePath,
+      fileName: fileName,
+    ).catchError((_) {});
+
     return filePath;
   } catch (_) {
     return null;
