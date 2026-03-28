@@ -986,14 +986,16 @@ class ApiClient {
     throw Exception(_apiError(response, '제출 삭제에 실패했습니다'));
   }
 
+  /// FCM 토큰을 백엔드에 등록/갱신. Fire-and-forget — 실패해도 무시.
   static Future<void> updateFcmToken(String token) async {
-    final response = await http.patch(
-      Uri.parse('$baseUrl/users/me/fcm-token'),
-      headers: await _headers(),
-      body: jsonEncode({'token': token}),
-    ).timeout(_timeout);
-    if (response.statusCode == 200 || response.statusCode == 204) return;
-    if (response.statusCode >= 500) throw ServerException();
-    throw Exception(_apiError(response, 'FCM 토큰 등록에 실패했습니다'));
+    try {
+      await http.patch(
+        Uri.parse('$baseUrl/users/me/fcm-token'),
+        headers: await _authOnlyHeaders(),
+        body: jsonEncode({'token': token}),
+      ).timeout(_timeout);
+    } catch (_) {
+      // fire-and-forget
+    }
   }
 }

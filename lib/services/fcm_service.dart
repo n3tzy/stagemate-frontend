@@ -33,10 +33,11 @@ class FcmService {
   }
 
   static Future<void> _registerToken() async {
+    // Always register the refresh listener regardless of initial token fetch result
+    FirebaseMessaging.instance.onTokenRefresh.listen(ApiClient.updateFcmToken);
     try {
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) await ApiClient.updateFcmToken(token);
-      FirebaseMessaging.instance.onTokenRefresh.listen(ApiClient.updateFcmToken);
     } catch (_) {
       // Fail silently — push is a nice-to-have
     }
