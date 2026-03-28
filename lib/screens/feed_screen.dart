@@ -1026,18 +1026,18 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                       children: [
                         Text(
                           widget.post['author'] ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
                           widget.post['created_at'] ?? '',
-                          style: TextStyle(fontSize: 11, color: colorScheme.outline),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.outline),
                         ),
                       ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(widget.post['content'] ?? '', style: const TextStyle(fontSize: 14, height: 1.5)),
+                Text(widget.post['content'] ?? '', style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5)),
                 if ((widget.post['media_urls'] as List? ?? []).isNotEmpty) ...[
                   const SizedBox(height: 8),
                   SizedBox(
@@ -1059,7 +1059,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
           Divider(color: colorScheme.outlineVariant),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text('댓글', style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.outline, fontSize: 13)),
+            child: Text('댓글', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.outline)),
           ),
           // 댓글 목록
           Expanded(
