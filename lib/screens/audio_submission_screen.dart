@@ -561,14 +561,22 @@ class _SubmissionTileState extends State<_SubmissionTile> {
   }
 
   Future<void> _togglePlay() async {
-    if (_playerState == PlayerState.playing) {
-      await _player.pause();
-    } else {
-      final url = widget.sub['file_url'] as String;
-      if (_playerState == PlayerState.paused) {
-        await _player.resume();
+    try {
+      if (_playerState == PlayerState.playing) {
+        await _player.pause();
       } else {
-        await _player.play(UrlSource(url));
+        final url = widget.sub['file_url'] as String;
+        if (_playerState == PlayerState.paused) {
+          await _player.resume();
+        } else {
+          await _player.play(UrlSource(url));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('재생 오류: ${friendlyError(e)}')),
+        );
       }
     }
   }
@@ -764,7 +772,12 @@ class _TeamLeaderSubmitSheetState
           _songTitleCtrl.text = sub['song_title'] as String? ?? '';
         }
       }
-    } catch (_) {
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyError(e))),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -790,6 +803,7 @@ class _TeamLeaderSubmitSheetState
       return;
     }
 
+    if (!mounted) return;
     setState(() {
       _isUploading = true;
       _uploadStatus = '파일 업로드 중...';
@@ -913,13 +927,21 @@ class _TeamLeaderSubmitSheetState
 
   Future<void> _togglePlay() async {
     if (_mySubmission == null) return;
-    if (_playerState == PlayerState.playing) {
-      await _player.pause();
-    } else if (_playerState == PlayerState.paused) {
-      await _player.resume();
-    } else {
-      await _player.play(
-          UrlSource(_mySubmission!['file_url'] as String));
+    try {
+      if (_playerState == PlayerState.playing) {
+        await _player.pause();
+      } else if (_playerState == PlayerState.paused) {
+        await _player.resume();
+      } else {
+        await _player.play(
+            UrlSource(_mySubmission!['file_url'] as String));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('재생 오류: ${friendlyError(e)}')),
+        );
+      }
     }
   }
 

@@ -72,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool get _isAdmin => widget.role == 'admin' || _isSuperAdmin;
   bool get _canOptimizeSchedule => _isAdmin;
   bool get _canManageClub => _isSuperAdmin;
-  bool get _canSubmitAudio => widget.role != 'user';
+  bool get _canSubmitAudio => widget.role == 'team_leader' || widget.role == 'admin' || widget.role == 'super_admin';
 
   // 역할에 따라 탭 화면 구성
   List<Widget> get _screens {
