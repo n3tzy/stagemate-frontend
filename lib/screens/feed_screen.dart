@@ -180,6 +180,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
   // ── 신고 다이얼로그 ──────────────────────────────
   Future<void> _showReportDialog({required int postId, int? commentId}) async {
     String? selected;
+    final etcController = TextEditingController();
     final reasons = ['성희롱·음란물', '욕설·비방', '스팸·광고', '개인정보 노출', '기타'];
     final result = await showDialog<String>(
       context: context,
@@ -188,23 +189,45 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
           title: const Text('신고하기'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: reasons.map((r) => RadioListTile<String>(
-              value: r, groupValue: selected,
-              title: Text(r),
-              dense: true,
-              onChanged: (v) => setState(() => selected = v),
-            )).toList(),
+            children: [
+              ...reasons.map((r) => RadioListTile<String>(
+                value: r, groupValue: selected,
+                title: Text(r),
+                dense: true,
+                onChanged: (v) => setState(() => selected = v),
+              )),
+              if (selected == '기타')
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
+                  child: TextField(
+                    controller: etcController,
+                    autofocus: true,
+                    maxLength: 100,
+                    decoration: const InputDecoration(
+                      hintText: '신고 사유를 직접 입력해주세요',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                  ),
+                ),
+            ],
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
             FilledButton(
-              onPressed: selected == null ? null : () => Navigator.pop(ctx, selected),
+              onPressed: selected == null ? null : () {
+                final reason = selected == '기타' && etcController.text.trim().isNotEmpty
+                    ? '기타: ${etcController.text.trim()}'
+                    : selected;
+                Navigator.pop(ctx, reason);
+              },
               child: const Text('신고'),
             ),
           ],
         ),
       ),
     );
+    etcController.dispose();
     if (result == null) return;
     try {
       if (commentId != null) {

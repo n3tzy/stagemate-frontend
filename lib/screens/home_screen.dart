@@ -723,67 +723,89 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _buildBottomNav(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final destinations = _destinations;
+    const minItemWidth = 68.0;
     return Container(
       color: colorScheme.surfaceContainer,
       height: 72,
-      child: Row(
-        children: [
-          for (int i = 0; i < destinations.length; i++) ...[
-            if (i > 0)
-              VerticalDivider(
-                width: 1,
-                thickness: 1,
-                indent: 10,
-                endIndent: 10,
-                color: colorScheme.outlineVariant,
-              ),
-            Expanded(
-              child: InkWell(
-                onTap: () => setState(() => _currentIndex = i),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _currentIndex == i
-                            ? colorScheme.secondaryContainer
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // 화면 너비를 아이템 수로 나눠서 균등 배분, 최소 68px 보장
+          final itemWidth = (constraints.maxWidth / destinations.length)
+              .clamp(minItemWidth, double.infinity);
+          final totalWidth = itemWidth * destinations.length;
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: SizedBox(
+              width: totalWidth,
+              child: Row(
+                children: [
+                  for (int i = 0; i < destinations.length; i++) ...[
+                    if (i > 0)
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        indent: 10,
+                        endIndent: 10,
+                        color: colorScheme.outlineVariant,
                       ),
-                      child: IconTheme(
-                        data: IconThemeData(
-                          color: _currentIndex == i
-                              ? colorScheme.onSecondaryContainer
-                              : colorScheme.onSurfaceVariant,
-                          size: 22,
-                        ),
-                        child: _currentIndex == i
-                            ? (destinations[i].selectedIcon ?? destinations[i].icon)
-                            : destinations[i].icon,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      destinations[i].label,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: _currentIndex == i
-                            ? colorScheme.onSurface
-                            : colorScheme.onSurfaceVariant,
-                        fontWeight: _currentIndex == i
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+                    SizedBox(
+                      width: itemWidth - (i > 0 ? 1 : 0),
+                      child: _buildNavItem(context, i, destinations),
                     ),
                   ],
-                ),
+                ],
               ),
             ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNavItem(BuildContext context, int i, List<NavigationDestination> destinations) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: () => setState(() => _currentIndex = i),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: _currentIndex == i
+                  ? colorScheme.secondaryContainer
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: IconTheme(
+              data: IconThemeData(
+                color: _currentIndex == i
+                    ? colorScheme.onSecondaryContainer
+                    : colorScheme.onSurfaceVariant,
+                size: 22,
+              ),
+              child: _currentIndex == i
+                  ? (destinations[i].selectedIcon ?? destinations[i].icon)
+                  : destinations[i].icon,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            destinations[i].label,
+            style: TextStyle(
+              fontSize: 10,
+              color: _currentIndex == i
+                  ? colorScheme.onSurface
+                  : colorScheme.onSurfaceVariant,
+              fontWeight: _currentIndex == i
+                  ? FontWeight.w600
+                  : FontWeight.normal,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
         ],
       ),
     );
