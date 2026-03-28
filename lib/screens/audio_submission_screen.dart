@@ -73,15 +73,30 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: dateCtrl,
-              decoration: const InputDecoration(
-                labelText: '공연 날짜 (선택)',
-                hintText: 'YYYY-MM-DD',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.calendar_today, size: 18),
+            GestureDetector(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2030),
+                );
+                if (picked != null) {
+                  dateCtrl.text =
+                      '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                }
+              },
+              child: AbsorbPointer(
+                child: TextField(
+                  controller: dateCtrl,
+                  decoration: const InputDecoration(
+                    labelText: '공연 날짜 (선택)',
+                    hintText: '날짜를 선택하세요',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.calendar_today, size: 18),
+                  ),
+                ),
               ),
-              keyboardType: TextInputType.datetime,
             ),
           ],
         ),
@@ -100,7 +115,15 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
 
     if (result != true) return;
     final name = nameCtrl.text.trim();
-    if (name.isEmpty || _clubId == null) return;
+    if (name.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('공연명을 입력해주세요.')),
+        );
+      }
+      return;
+    }
+    if (_clubId == null) return;
 
     try {
       await ApiClient.createPerformance(
@@ -110,23 +133,26 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
             dateCtrl.text.trim().isEmpty ? null : dateCtrl.text.trim(),
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('공연이 등록됐습니다.'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(
+              content: Text('공연이 등록됐습니다.'),
+              backgroundColor: Colors.green,
+            ),
+          );
         await _load();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text(e.toString().replaceFirst('Exception: ', '')),
-            backgroundColor: Colors.red,
-          ),
-        );
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceFirst('Exception: ', '')),
+              backgroundColor: Colors.red,
+            ),
+          );
       }
     }
   }

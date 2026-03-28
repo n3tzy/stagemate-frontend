@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
@@ -280,7 +281,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildMemberRanking() {
     final ranking = _getMemberRanking();
     final colorScheme = Theme.of(context).colorScheme;
-    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
     final maxCount = ranking.isEmpty ? 1 : (ranking.first['count'] as int);
 
     return Card(
@@ -292,7 +292,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             // 헤더
             Row(
               children: [
-                const Text('🏆', style: TextStyle(fontSize: 18)),
+                const Icon(Icons.emoji_events, size: 22, color: Colors.amber),
                 const SizedBox(width: 8),
                 Text(
                   '출연 멤버 랭킹 (TOP ${ranking.length})',
@@ -319,9 +319,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     // 이름 + 곡 수
                     Row(
                       children: [
-                        Text(
-                          medals[i],
-                          style: const TextStyle(fontSize: 16),
+                        Icon(
+                          Icons.circle,
+                          size: 14,
+                          color: i == 0
+                              ? Colors.amber
+                              : i == 1
+                                  ? Colors.grey.shade400
+                                  : i == 2
+                                      ? Colors.brown.shade300
+                                      : colorScheme.outlineVariant,
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -537,7 +544,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       if (path != null && mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('💾 저장됐어요!\n$path'),
+                            content: Text('💾 저장됐어요: ${path.split(Platform.pathSeparator).last}'),
                             duration: const Duration(seconds: 4),
                             behavior: SnackBarBehavior.floating,
                           ),
