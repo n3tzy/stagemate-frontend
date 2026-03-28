@@ -723,4 +723,47 @@ class ApiClient {
     ).timeout(_timeout);
     return _parseResponse(response);
   }
+
+  static Future<Map<String, dynamic>> getClubProfile(int clubId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/$clubId/profile'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 401) throw const UnauthorizedException();
+    if (response.statusCode == 404) {
+      throw Exception('동아리를 찾을 수 없습니다.');
+    }
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  static Future<Map<String, dynamic>> updateClubProfile(
+    int clubId,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/clubs/$clubId/profile'),
+      headers: await _headers(),
+      body: jsonEncode(data),
+    ).timeout(_timeout);
+    if (response.statusCode == 403) {
+      throw Exception('권한이 없습니다.');
+    }
+    if (response.statusCode == 400) {
+      // FastAPI returns {"detail": "..."} for 400 errors
+      try {
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        final detail = body['detail'];
+        if (detail is String) throw Exception(detail);
+        if (detail is List && detail.isNotEmpty) {
+          throw Exception((detail.first['msg'] as String?) ?? '잘못된 입력입니다.');
+        }
+      } catch (parseError) {
+        if (parseError is Exception) rethrow;
+      }
+      throw Exception('잘못된 입력입니다.');
+    }
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
 }

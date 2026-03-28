@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../api/api_client.dart';
+import 'club_profile_sheet.dart';
 
 class ClubManageScreen extends StatefulWidget {
   const ClubManageScreen({super.key});
@@ -15,6 +16,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
   List<dynamic> _members = [];
   bool _isLoadingCode = false;
   bool _isLoadingMembers = false;
+  String _myRole = 'member';
 
   @override
   void initState() {
@@ -51,7 +53,18 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     setState(() => _isLoadingMembers = true);
     try {
       final data = await ApiClient.getMembers(_clubId!);
-      if (mounted) setState(() => _members = data);
+      final myId = await ApiClient.getUserId();
+      if (mounted) {
+        setState(() {
+          _members = data;
+          // 현재 유저의 role 파악 (isOwner 판단에 사용)
+          final me = _members.firstWhere(
+            (m) => m['user_id'] == myId,
+            orElse: () => <String, dynamic>{},
+          );
+          _myRole = (me['role'] as String?) ?? 'member';
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -352,6 +365,23 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // ── 동아리 프로필 카드 ────────────────────────
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.business_outlined),
+                title: const Text('동아리 프로필'),
+                subtitle: Text(_myRole == 'super_admin' ? '로고·배너·테마 편집 가능' : '프로필 보기'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: _clubId == null
+                    ? null
+                    : () => showClubProfile(
+                          context,
+                          _clubId!,
+                          isOwner: _myRole == 'super_admin',
+                        ),
+              ),
+            ),
+            const SizedBox(height: 8),
             // ── 초대 코드 섹션 ────────────────────────
             Text(
               '초대 코드',
