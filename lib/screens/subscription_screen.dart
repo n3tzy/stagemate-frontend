@@ -47,6 +47,7 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
       _isLoading = true;
       _error = null;
     });
+    Map<String, dynamic>? loadedSub;
     try {
       final sub = await ApiClient.getClubSubscription(widget.clubId);
       final available = await InAppPurchase.instance.isAvailable();
@@ -55,11 +56,14 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
             .queryProductDetails({_kStandardId, _kProId});
         if (mounted) setState(() => _products = resp.productDetails);
       }
-      if (mounted) setState(() => _subInfo = sub);
+      loadedSub = sub;
     } catch (e) {
       if (mounted) setState(() => _error = friendlyError(e));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() {
+        _subInfo = loadedSub;
+        _isLoading = false;
+      });
     }
   }
 
@@ -84,6 +88,7 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
 
   Future<void> _onPurchaseUpdate(List<PurchaseDetails> purchases) async {
     for (final purchase in purchases) {
+      bool completed = false;
       if (purchase.status == PurchaseStatus.purchased ||
           purchase.status == PurchaseStatus.restored) {
         try {
@@ -98,6 +103,7 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
             receiptData: purchase.verificationData.serverVerificationData,
           );
           await InAppPurchase.instance.completePurchase(purchase);
+          completed = true;
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -121,7 +127,7 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
           );
         }
       }
-      if (purchase.pendingCompletePurchase) {
+      if (!completed && purchase.pendingCompletePurchase) {
         await InAppPurchase.instance.completePurchase(purchase);
       }
     }

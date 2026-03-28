@@ -680,6 +680,12 @@ class _ClubJoinScreenState extends State<ClubJoinScreen> {
   final _codeController = TextEditingController();
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
   Future<void> _joinClub() async {
     final code = _codeController.text.trim().toUpperCase();
     if (code.length != 6) {
