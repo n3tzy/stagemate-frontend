@@ -285,7 +285,7 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
                 Expanded(
                   child: _PlanCard(
                     name: 'PRO',
-                    price: '₩29,900/월',
+                    price: '₩29,000/월',
                     storage: '200GB',
                     boostCredits: 20,
                     isCurrent: currentPlan == 'pro',
