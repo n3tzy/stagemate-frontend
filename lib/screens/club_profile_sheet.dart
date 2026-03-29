@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import '../api/api_client.dart';
 
 // ── 컬러 칩에 쓸 6가지 프리셋 ──────────────────────────
@@ -228,42 +231,53 @@ class ClubProfileEditSheet extends StatefulWidget {
 }
 
 class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
-  late final TextEditingController _logoCtrl;
-  late final TextEditingController _bannerCtrl;
+  String? _logoUrl;
+  String? _bannerUrl;
   String? _selectedColor;
   bool _isSaving = false;
+  bool _isUploadingLogo = false;
+  bool _isUploadingBanner = false;
 
   @override
   void initState() {
     super.initState();
-    _logoCtrl = TextEditingController(
-        text: widget.currentProfile['logo_url'] as String? ?? '');
-    _bannerCtrl = TextEditingController(
-        text: widget.currentProfile['banner_url'] as String? ?? '');
+    _logoUrl = widget.currentProfile['logo_url'] as String?;
+    _bannerUrl = widget.currentProfile['banner_url'] as String?;
     _selectedColor = widget.currentProfile['theme_color'] as String?;
   }
 
-  @override
-  void dispose() {
-    _logoCtrl.dispose();
-    _bannerCtrl.dispose();
-    super.dispose();
+  Future<String?> _pickAndUpload(String field) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (picked == null) return null;
+
+    final filename = '${field}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final presigned = await ApiClient.getPresignedUrl(filename, 'image/jpeg');
+    final uploadUrl = presigned['upload_url'] as String;
+    final publicUrl = presigned['public_url'] as String;
+
+    final bytes = await File(picked.path).readAsBytes();
+    final res = await http.put(
+      Uri.parse(uploadUrl),
+      body: bytes,
+      headers: {'Content-Type': 'image/jpeg'},
+    );
+    if (res.statusCode != 200) throw Exception('이미지 업로드에 실패했어요.');
+    return publicUrl;
   }
 
   Future<void> _save() async {
     setState(() => _isSaving = true);
     try {
-      // 변경된 필드만 body에 포함
       final body = <String, dynamic>{};
-      final logoText = _logoCtrl.text.trim();
-      final bannerText = _bannerCtrl.text.trim();
-
-      // 로고: 빈 문자열이면 null(초기화), 값 있으면 포함
-      if (logoText != (widget.currentProfile['logo_url'] ?? '')) {
-        body['logo_url'] = logoText.isEmpty ? null : logoText;
+      if (_logoUrl != (widget.currentProfile['logo_url'] as String?)) {
+        body['logo_url'] = _logoUrl;
       }
-      if (bannerText != (widget.currentProfile['banner_url'] ?? '')) {
-        body['banner_url'] = bannerText.isEmpty ? null : bannerText;
+      if (_bannerUrl != (widget.currentProfile['banner_url'] as String?)) {
+        body['banner_url'] = _bannerUrl;
       }
       if (_selectedColor != widget.currentProfile['theme_color']) {
         body['theme_color'] = _selectedColor;
@@ -296,10 +310,13 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
     return Padding(
       padding: EdgeInsets.only(
         left: 24, right: 24, top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        bottom: (bottomInset > 0 ? bottomInset : bottomPad) + 24,
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -314,22 +331,46 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            TextField(
-              controller: _logoCtrl,
-              decoration: const InputDecoration(
-                labelText: '로고 이미지 URL',
-                hintText: 'https://...',
-                border: OutlineInputBorder(),
-              ),
+            _ImagePickerRow(
+              label: '로고 이미지',
+              imageUrl: _logoUrl,
+              isUploading: _isUploadingLogo,
+              onTap: () async {
+                setState(() => _isUploadingLogo = true);
+                try {
+                  final url = await _pickAndUpload('logo');
+                  if (url != null) setState(() => _logoUrl = url);
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(friendlyError(e))),
+                    );
+                  }
+                } finally {
+                  if (mounted) setState(() => _isUploadingLogo = false);
+                }
+              },
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _bannerCtrl,
-              decoration: const InputDecoration(
-                labelText: '배너 이미지 URL',
-                hintText: 'https://...',
-                border: OutlineInputBorder(),
-              ),
+            _ImagePickerRow(
+              label: '배너 이미지',
+              imageUrl: _bannerUrl,
+              isUploading: _isUploadingBanner,
+              onTap: () async {
+                setState(() => _isUploadingBanner = true);
+                try {
+                  final url = await _pickAndUpload('banner');
+                  if (url != null) setState(() => _bannerUrl = url);
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(friendlyError(e))),
+                    );
+                  }
+                } finally {
+                  if (mounted) setState(() => _isUploadingBanner = false);
+                }
+              },
             ),
             const SizedBox(height: 16),
             Text('테마 컬러',
@@ -376,6 +417,70 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── 이미지 선택 행 위젯 ──────────────────────────────
+class _ImagePickerRow extends StatelessWidget {
+  final String label;
+  final String? imageUrl;
+  final bool isUploading;
+  final VoidCallback onTap;
+
+  const _ImagePickerRow({
+    required this.label,
+    required this.imageUrl,
+    required this.isUploading,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: 64,
+            height: 64,
+            child: imageUrl != null
+                ? Image.network(
+                    imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                    ),
+                  )
+                : Container(
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.image_outlined, color: Colors.grey),
+                  ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 4),
+              OutlinedButton.icon(
+                onPressed: isUploading ? null : onTap,
+                icon: isUploading
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.photo_library_outlined, size: 16),
+                label: Text(isUploading ? '업로드 중...' : '사진 선택'),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
