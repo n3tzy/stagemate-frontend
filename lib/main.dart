@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_jailbreak_detection/flutter_jailbreak_detection.dart';
+import 'package:safe_device/safe_device.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
@@ -127,8 +127,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // 0. 루팅/탈옥 탐지 — 감지 시 사용 제한 경고
     try {
-      final isJailbroken = await FlutterJailbreakDetection.jailbroken;
-      final isDeveloperMode = await FlutterJailbreakDetection.developerMode;
+      final isJailbroken = await SafeDevice.isJailBroken;
+      final isDeveloperMode = await SafeDevice.isDevelopmentModeEnable;
       if ((isJailbroken || isDeveloperMode) && mounted) {
         await showDialog(
           context: context,

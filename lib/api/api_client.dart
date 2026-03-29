@@ -50,7 +50,7 @@ class ApiClient {
   /// dart_defines.json 은 gitignore에 포함됨 (dart_defines.example.json 참고)
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000',  // 개발 localhost only
+    defaultValue: 'https://skillful-unity-production-e922.up.railway.app',
   );
 
 
