@@ -1,9 +1,9 @@
-import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../api/api_client.dart';
+import 'comments_screen.dart';
 import 'post_create_screen.dart';
 import 'club_profile_sheet.dart';
 
@@ -241,18 +241,16 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
   }
 
   void _showComments(dynamic post) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _CommentsSheet(
-        post: post,
-        myDisplayName: _myDisplayName,
-        myUserId: _myUserId,
-        role: _role,
-        onChanged: _loadAll,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CommentsScreen(
+          post: post,
+          myDisplayName: _myDisplayName,
+          myUserId: _myUserId,
+          role: _role,
+          onChanged: _loadAll,
+        ),
       ),
     );
   }
@@ -472,7 +470,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
             children: [
               Row(
                 children: [
-                  _UserAvatar(
+                  FeedUserAvatar(
                     name: post['author'] as String? ?? '?',
                     avatarUrl: post['author_avatar'] as String?,
                     radius: 18,
@@ -560,7 +558,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                     scrollDirection: Axis.horizontal,
                     itemCount: mediaUrls.length,
                     separatorBuilder: (_, __) => const SizedBox(width: 6),
-                    itemBuilder: (_, i) => _MediaThumbnail(
+                    itemBuilder: (_, i) => FeedMediaThumbnail(
                       urls: mediaUrls.cast<String>(),
                       index: i,
                     ),
@@ -758,591 +756,14 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
   }
 }
 
-// ── 댓글 바텀시트 ────────────────────────────────────
-class _CommentsSheet extends StatefulWidget {
-  final dynamic post;
-  final String myDisplayName;
-  final int? myUserId;
-  final String role;
-  final VoidCallback onChanged;
-
-  const _CommentsSheet({
-    required this.post,
-    required this.myDisplayName,
-    this.myUserId,
-    required this.role,
-    required this.onChanged,
-  });
-
-  @override
-  State<_CommentsSheet> createState() => _CommentsSheetState();
-}
-
-class _CommentsSheetState extends State<_CommentsSheet> {
-  List<dynamic> _comments = [];
-  bool _loading = true;
-  bool _submitting = false;
-  final _ctrl = TextEditingController();
-  OverlayEntry? _commentMenuOverlay;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void dispose() {
-    _hideCommentMenu();
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _hideCommentMenu() {
-    _commentMenuOverlay?.remove();
-    _commentMenuOverlay = null;
-  }
-
-  void _showCommentMenu({
-    required BuildContext iconContext,
-    required dynamic comment,
-    required bool isMine,
-  }) {
-    _hideCommentMenu();
-    final renderBox = iconContext.findRenderObject() as RenderBox;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    _commentMenuOverlay = OverlayEntry(
-      builder: (_) => GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _hideCommentMenu,
-        onVerticalDragStart: (_) => _hideCommentMenu(),
-        child: Stack(
-          children: [
-            Positioned(
-              top: offset.dy + size.height,
-              right: MediaQuery.of(context).size.width - offset.dx - size.width,
-              child: GestureDetector(
-                onTap: () {},
-                child: Material(
-                  elevation: 8,
-                  borderRadius: BorderRadius.circular(8),
-                  child: IntrinsicWidth(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (isMine) ...[
-                          ListTile(
-                            dense: true,
-                            leading: const Icon(Icons.edit_outlined, size: 18),
-                            title: const Text('수정'),
-                            onTap: () {
-                              _hideCommentMenu();
-                              _showEditCommentDialog(comment);
-                            },
-                          ),
-                          ListTile(
-                            dense: true,
-                            leading: Icon(Icons.delete_outline, size: 18, color: colorScheme.error),
-                            title: Text('삭제', style: TextStyle(color: colorScheme.error)),
-                            onTap: () {
-                              _hideCommentMenu();
-                              _delete(comment['id']);
-                            },
-                          ),
-                        ] else ...[
-                          ListTile(
-                            dense: true,
-                            leading: const Icon(Icons.flag_outlined, size: 18),
-                            title: const Text('신고'),
-                            onTap: () {
-                              _hideCommentMenu();
-                              _showReportCommentDialog(comment['id']);
-                            },
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    Overlay.of(context).insert(_commentMenuOverlay!);
-  }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    try {
-      final comments = await ApiClient.getPostComments(widget.post['id']);
-      setState(() => _comments = comments);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _comments = []);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('댓글을 불러오지 못했어요. ${friendlyError(e)}')),
-        );
-      }
-    } finally {
-      setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _submit() async {
-    final text = _ctrl.text.trim();
-    if (text.isEmpty || _submitting) return;
-    setState(() => _submitting = true);
-    try {
-      await ApiClient.createPostComment(widget.post['id'], text);
-      _ctrl.clear();
-      await _load();
-      widget.onChanged();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyError(e))),
-        );
-      }
-    } finally {
-      setState(() => _submitting = false);
-    }
-  }
-
-  Future<void> _delete(int commentId) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('댓글 삭제'),
-        content: const Text('이 댓글을 삭제할까요?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-    try {
-      await ApiClient.deletePostComment(widget.post['id'], commentId);
-      await _load();
-      widget.onChanged();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyError(e))),
-        );
-      }
-    }
-  }
-
-  Future<void> _showEditCommentDialog(dynamic comment) async {
-    final ctrl = TextEditingController(text: comment['content'] as String? ?? '');
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('댓글 수정'),
-        content: TextField(
-          controller: ctrl,
-          maxLines: 4,
-          maxLength: 500,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('저장')),
-        ],
-      ),
-    );
-    if (result != true) return;
-    try {
-      await ApiClient.updatePostComment(widget.post['id'], comment['id'], ctrl.text.trim());
-      await _load();
-      widget.onChanged();
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _showReportCommentDialog(int commentId) async {
-    String? selected;
-    final reasons = ['성희롱·음란물', '욕설·비방', '스팸·광고', '개인정보 노출', '기타'];
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (_, setState) => AlertDialog(
-          title: const Text('신고하기'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: reasons.map((r) => RadioListTile<String>(
-              value: r, groupValue: selected,
-              title: Text(r),
-              dense: true,
-              onChanged: (v) => setState(() => selected = v),
-            )).toList(),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
-            FilledButton(
-              onPressed: selected == null ? null : () => Navigator.pop(ctx, selected),
-              child: const Text('신고'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (result == null) return;
-    try {
-      await ApiClient.reportPostComment(widget.post['id'], commentId, result);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('신고가 접수됐어요.'), backgroundColor: Colors.orange),
-      );
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
-      );
-    }
-  }
-
-  Future<void> _toggleLike(dynamic comment) async {
-    final commentId = comment['id'] as int;
-    final wasLiked = comment['is_liked_by_me'] as bool? ?? false;
-    final prevCount = comment['like_count'] as int? ?? 0;
-
-    // Optimistic update
-    setState(() {
-      comment['is_liked_by_me'] = !wasLiked;
-      comment['like_count'] = prevCount + (wasLiked ? -1 : 1);
-    });
-    _recalculateBest();
-
-    try {
-      final result = await ApiClient.toggleCommentLike(
-        widget.post['id'] as int,
-        commentId,
-      );
-      if (mounted) {
-        setState(() {
-          comment['is_liked_by_me'] = result['liked'] as bool;
-          comment['like_count'] = result['like_count'] as int;
-        });
-        _recalculateBest();
-      }
-    } catch (e) {
-      // Revert on error
-      if (mounted) {
-        setState(() {
-          comment['is_liked_by_me'] = wasLiked;
-          comment['like_count'] = prevCount;
-        });
-        _recalculateBest();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('좋아요 처리 중 오류가 발생했어요.')),
-        );
-      }
-    }
-  }
-
-  void _recalculateBest() {
-    // Reset all
-    for (final c in _comments) {
-      c['is_best'] = false;
-    }
-    // Find comment with most likes (>= 1); tie-break: first in list (earliest created_at)
-    int maxLikes = 0;
-    dynamic bestComment;
-    for (final c in _comments) {
-      final likes = c['like_count'] as int? ?? 0;
-      if (likes > maxLikes) {
-        maxLikes = likes;
-        bestComment = c;
-      }
-    }
-    if (bestComment != null && maxLikes > 0) {
-      bestComment['is_best'] = true;
-    }
-    setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (_, scrollCtrl) => Column(
-        children: [
-          // 핸들
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: colorScheme.outlineVariant,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          // 게시글 전체 내용
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _UserAvatar(
-                      name: widget.post['author'] as String? ?? '?',
-                      avatarUrl: widget.post['author_avatar'] as String?,
-                      radius: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.post['author'] ?? '',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          widget.post['created_at'] ?? '',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colorScheme.outline),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(widget.post['content'] ?? '', style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5)),
-                if ((widget.post['media_urls'] as List? ?? []).isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 160,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: (widget.post['media_urls'] as List).length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 6),
-                      itemBuilder: (_, i) => _MediaThumbnail(
-                        urls: (widget.post['media_urls'] as List).cast<String>(),
-                        index: i,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Divider(color: colorScheme.outlineVariant),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text('댓글', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.outline)),
-          ),
-          // 댓글 목록
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _comments.isEmpty
-                    ? Center(
-                        child: Text(
-                          '첫 댓글을 남겨보세요!',
-                          style: TextStyle(color: colorScheme.outline),
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: scrollCtrl,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _comments.length,
-                        itemBuilder: (_, i) {
-                          final c = _comments[i];
-                          final isMine = (c['author_id'] as int?) == widget.myUserId;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _UserAvatar(
-                                  name: c['author'] as String? ?? '?',
-                                  avatarUrl: c['author_avatar'] as String?,
-                                  radius: 16,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            c['author'] ?? '',
-                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          if (c['is_best'] == true) ...[
-                                            const SizedBox(width: 4),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                  horizontal: 6, vertical: 1),
-                                              decoration: BoxDecoration(
-                                                color: Colors.transparent,
-                                                border: Border.all(
-                                                    color: Colors.red, width: 2.0),
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              child: Text(
-                                                'BEST',
-                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                  color: Colors.red,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            c['created_at'] ?? '',
-                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                              color: colorScheme.outline,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        c['content'] ?? '',
-                                        style: Theme.of(context).textTheme.bodyMedium,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // 좋아요 버튼
-                                GestureDetector(
-                                  onTap: () => _toggleLike(c),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 4, vertical: 4),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          (c['is_liked_by_me'] as bool? ?? false)
-                                              ? Icons.favorite
-                                              : Icons.favorite_border,
-                                          size: 16,
-                                          color: (c['is_liked_by_me'] as bool? ??
-                                                  false)
-                                              ? Colors.red
-                                              : colorScheme.outline,
-                                        ),
-                                        if ((c['like_count'] as int? ?? 0) > 0)
-                                          Text(
-                                            '${c['like_count']}',
-                                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                              color: colorScheme.outline,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                Builder(
-                                  builder: (iconContext) => IconButton(
-                                    icon: Icon(Icons.more_vert,
-                                        size: 16, color: colorScheme.outline),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(
-                                        minWidth: 32, minHeight: 32),
-                                    onPressed: () => _showCommentMenu(
-                                      iconContext: iconContext,
-                                      comment: c,
-                                      isMine: isMine,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-          ),
-          // 댓글 입력
-          Container(
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
-            ),
-            padding: EdgeInsets.fromLTRB(
-              16, 10, 16,
-              10 + math.max(
-                MediaQuery.of(context).viewInsets.bottom,
-                MediaQuery.of(context).viewPadding.bottom,
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _ctrl,
-                    decoration: InputDecoration(
-                      hintText: '댓글을 입력하세요...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      isDense: true,
-                    ),
-                    maxLines: null,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _submit(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _submitting
-                    ? const SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : FilledButton(
-                        onPressed: _submit,
-                        style: FilledButton.styleFrom(
-                          shape: const CircleBorder(),
-                          padding: const EdgeInsets.all(10),
-                          minimumSize: const Size(40, 40),
-                        ),
-                        child: const Icon(Icons.send, size: 18),
-                      ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      ),
-    );
-  }
-}
-
 // ── 미디어 썸네일 (사진/영상 공통) ────────────────────
-class _MediaThumbnail extends StatefulWidget {
+class FeedMediaThumbnail extends StatefulWidget {
   final List<String> urls;
   final int index;
   final double size;
 
-  const _MediaThumbnail({
+  const FeedMediaThumbnail({
+    super.key,
     required this.urls,
     required this.index,
     this.size = 160,
@@ -1355,10 +776,10 @@ class _MediaThumbnail extends StatefulWidget {
   }
 
   @override
-  State<_MediaThumbnail> createState() => _MediaThumbnailState();
+  State<FeedMediaThumbnail> createState() => FeedMediaThumbnailState();
 }
 
-class _MediaThumbnailState extends State<_MediaThumbnail> {
+class FeedMediaThumbnailState extends State<FeedMediaThumbnail> {
   Uint8List? _thumbData;
   bool _thumbError = false;
 
@@ -1367,7 +788,7 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
   @override
   void initState() {
     super.initState();
-    if (_MediaThumbnail.isVideo(_url)) _loadThumb();
+    if (FeedMediaThumbnail.isVideo(_url)) _loadThumb();
   }
 
   Future<void> _loadThumb() async {
@@ -1386,7 +807,7 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
 
   @override
   Widget build(BuildContext context) {
-    final isVid = _MediaThumbnail.isVideo(_url);
+    final isVid = FeedMediaThumbnail.isVideo(_url);
     final sz = widget.size;
 
     return GestureDetector(
@@ -1499,7 +920,7 @@ class _MediaViewerScreenState extends State<_MediaViewerScreen> {
         onPageChanged: (i) => setState(() => _currentIndex = i),
         itemBuilder: (_, i) {
           final url = widget.urls[i];
-          return _MediaThumbnail.isVideo(url)
+          return FeedMediaThumbnail.isVideo(url)
               ? _VideoPage(url: url, isActive: i == _currentIndex)
               : _PhotoPage(url: url);
         },
@@ -1647,12 +1068,13 @@ class _VideoPageState extends State<_VideoPage> {
 }
 
 // ── 유저 아바타 (프로필 사진 or 이니셜) ──────────────
-class _UserAvatar extends StatelessWidget {
+class FeedUserAvatar extends StatelessWidget {
   final String name;
   final String? avatarUrl;
   final double radius;
 
-  const _UserAvatar({
+  const FeedUserAvatar({
+    super.key,
     required this.name,
     required this.avatarUrl,
     this.radius = 18,
