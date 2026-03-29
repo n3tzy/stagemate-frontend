@@ -82,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _currentClubId = (matched['club_id'] as num).toInt();
           _currentClubName = matched['club_name'] as String;
           _currentRole = matched['role'] as String;
+          _buildScreens();
         });
       }
     } else if (widget.clubs.isNotEmpty) {
@@ -89,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _currentClubId = (first['club_id'] as num).toInt();
+          _buildScreens();
         });
       }
     }
@@ -137,21 +139,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _buildScreens() {
     _screenWidgets = [
-      const NoticeScreen(key: ValueKey('notice')),
+      NoticeScreen(key: ValueKey('notice_$_currentClubId')),
       FeedScreen(
-        key: const ValueKey('feed'),
+        key: ValueKey('feed_$_currentClubId'),
         pendingPostId: _pendingPostId,
         onPostIdConsumed: () => setState(() {
           _pendingPostId = null;
           _buildScreens();
         }),
       ),
-      if (_canOptimizeSchedule) const ScheduleScreen(key: ValueKey('schedule')),
-      const GroupScreen(key: ValueKey('group')),
-      const BookingScreen(key: ValueKey('booking')),
+      if (_canOptimizeSchedule) ScheduleScreen(key: ValueKey('schedule_$_currentClubId')),
+      GroupScreen(key: ValueKey('group_$_currentClubId')),
+      BookingScreen(key: ValueKey('booking_$_currentClubId')),
       if (_canSubmitAudio)
-        AudioSubmissionScreen(key: const ValueKey('audio'), role: _currentRole),
-      if (_canManageClub) const ClubManageScreen(key: ValueKey('clubManage')),
+        AudioSubmissionScreen(key: ValueKey('audio_$_currentClubId'), role: _currentRole),
+      if (_canManageClub) ClubManageScreen(key: ValueKey('clubManage_$_currentClubId')),
     ];
   }
 
@@ -953,6 +955,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 _currentClubId = (club['club_id'] as num).toInt();
                                 _currentClubName = club['club_name'] as String;
                                 _currentRole = club['role'] as String;
+                                _buildScreens();
                               });
                             },
                             onAddClub: () {
