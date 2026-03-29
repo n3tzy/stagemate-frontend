@@ -960,11 +960,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ),
                     )
                   else
-                    Text(
-                      _currentClubName,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      iconSize: 16,
+                      padding: EdgeInsets.zero,
+                      color: colorScheme.onPrimaryContainer,
+                      tooltip: '동아리 추가',
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ClubOnboardingScreen(isPostLogin: true),
+                        ),
                       ),
                     ),
                 ],
