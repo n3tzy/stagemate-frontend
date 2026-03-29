@@ -49,13 +49,15 @@ class MyApp extends StatelessWidget {
         fontFamily: 'ZenSerif',
       ),
       builder: (context, child) {
+        // 시스템 글꼴 크기 설정을 그대로 존중 (iOS/Android 접근성)
+        // 태블릿에서만 약간 확대하되, 최대 1.8배로 제한
         final width = MediaQuery.of(context).size.width;
-        // 시스템 폰트 크기 설정 반영 + 태블릿 추가 확대
         final systemScale = MediaQuery.textScalerOf(context).scale(1.0);
-        final responsiveScale = width >= 900 ? 1.4 : (width >= 600 ? 1.25 : 1.0);
+        final responsiveScale = width >= 900 ? 1.3 : (width >= 600 ? 1.15 : 1.0);
+        final combined = (responsiveScale * systemScale).clamp(0.8, 1.3);
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(responsiveScale * systemScale),
+            textScaler: TextScaler.linear(combined),
           ),
           child: child!,
         );
