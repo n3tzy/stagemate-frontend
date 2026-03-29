@@ -236,7 +236,7 @@ class _GroupScreenState extends State<GroupScreen> {
                     Navigator.pop(dialogContext);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('✅ 저장됐습니다!'),
+                        content: Text('저장됐습니다!'),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -611,7 +611,7 @@ class _GroupScreenState extends State<GroupScreen> {
                     children: [
                       const Row(
                         children: [
-                          Text('🏆', style: TextStyle(fontSize: 20)),
+                          Icon(Icons.workspace_premium, color: Colors.amber, size: 24),
                           SizedBox(width: 8),
                           Text(
                             '최적 추천 시간',
@@ -644,12 +644,18 @@ class _GroupScreenState extends State<GroupScreen> {
 
               // 전원 가능
               if ((_result!['common_slots'] as List).isNotEmpty) ...[
-                Text(
-                  '✅ 전원 가능 시간 (${(_result!['common_slots'] as List).length}개)',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    const SizedBox(width: 6),
+                    Text(
+                      '전원 가능 시간 (${(_result!['common_slots'] as List).length}개)',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 ...(_result!['common_slots'] as List).map((slot) {
@@ -662,13 +668,19 @@ class _GroupScreenState extends State<GroupScreen> {
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Colors.green.shade100,
-                        child: const Text('✅'),
+                        child: const Icon(Icons.check_circle, color: Colors.white, size: 20),
                       ),
                       title: Text(
                         _slotLabel(slot),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Text('👥 $members'),
+                      subtitle: Row(
+                        children: [
+                          const Icon(Icons.people, size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Expanded(child: Text(members, style: const TextStyle(color: Colors.grey))),
+                        ],
+                      ),
                       trailing: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
@@ -692,12 +704,18 @@ class _GroupScreenState extends State<GroupScreen> {
               // 부분 가능
               if ((_result!['partial_slots'] as List).isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text(
-                  '🔶 일부 가능 시간 (${(_result!['partial_slots'] as List).length}개)',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange,
-                      ),
+                Row(
+                  children: [
+                    const Icon(Icons.schedule, color: Colors.orange, size: 18),
+                    const SizedBox(width: 6),
+                    Text(
+                      '일부 가능 시간 (${(_result!['partial_slots'] as List).length}개)',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 ...(_result!['partial_slots'] as List).map((slot) {
@@ -710,13 +728,19 @@ class _GroupScreenState extends State<GroupScreen> {
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Colors.orange.shade100,
-                        child: const Text('🔶'),
+                        child: const Icon(Icons.schedule, color: Colors.white, size: 20),
                       ),
                       title: Text(
                         _slotLabel(slot),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Text('👥 $members'),
+                      subtitle: Row(
+                        children: [
+                          const Icon(Icons.people, size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Expanded(child: Text(members, style: const TextStyle(color: Colors.grey))),
+                        ],
+                      ),
                       trailing: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
@@ -746,12 +770,19 @@ class _GroupScreenState extends State<GroupScreen> {
                     color: Theme.of(context).colorScheme.errorContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    '😢 공통 가능 시간이 없어요.\n멤버들의 가능 시간을 다시 확인해주세요!',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onErrorContainer,
-                    ),
-                    textAlign: TextAlign.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.sentiment_dissatisfied, size: 48, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      Text(
+                        '공통 가능 시간이 없어요.\n멤버들의 가능 시간을 다시 확인해주세요!',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
             ],
