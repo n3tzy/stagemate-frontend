@@ -302,6 +302,8 @@ class _LoginScreenState extends State<LoginScreen> {
         _showError('카카오 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       }
     } catch (e) {
+      debugPrint('▶▶▶ 카카오 로그인 에러: $e');
+      debugPrint('▶▶▶ 에러 타입: ${e.runtimeType}');
       final msg = e.toString().toLowerCase();
       if (msg.contains('canceled') || msg.contains('cancel') ||
           msg.contains('user_cancelled') ||
