@@ -1,15 +1,22 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import '../api/api_client.dart';
 
 typedef PostTapCallback = void Function(int postId);
 
 class FcmService {
   static PostTapCallback? _onPostTap;
+  static VoidCallback? _onNoticeTap;
 
   /// Call once from HomeScreen.initState() after login is confirmed.
   /// [onPostTap] switches the home screen to the Feed tab.
-  static Future<void> init({required PostTapCallback onPostTap}) async {
+  /// [onNoticeTap] switches the home screen to the Announcements tab.
+  static Future<void> init({
+    required PostTapCallback onPostTap,
+    VoidCallback? onNoticeTap,
+  }) async {
     _onPostTap = onPostTap;
+    _onNoticeTap = onNoticeTap;
 
     await FirebaseMessaging.instance.requestPermission();
     await _registerToken();
@@ -45,9 +52,17 @@ class FcmService {
 
   static void _handleMessage(RemoteMessage message) {
     final postIdStr = message.data['post_id'];
-    if (postIdStr == null) return;
-    final postId = int.tryParse(postIdStr);
-    if (postId == null || _onPostTap == null) return;
-    _onPostTap!(postId);
+    if (postIdStr != null) {
+      final postId = int.tryParse(postIdStr);
+      if (postId != null) _onPostTap?.call(postId);
+      return;
+    }
+
+    // Announcement notification → switch to announcements tab
+    final noticeIdStr = message.data['notice_id'];
+    if (noticeIdStr != null) {
+      _onNoticeTap?.call();
+      return;
+    }
   }
 }

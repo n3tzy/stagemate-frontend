@@ -66,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _currentIndex = 1; // Feed is always index 1 (see _screens getter — unconditional, position 1)
         _buildScreens();
       }),
+      onNoticeTap: () => setState(() => _currentIndex = 0), // 0 = 공지사항 tab
     );
   }
 
