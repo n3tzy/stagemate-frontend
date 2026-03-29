@@ -4,7 +4,8 @@ import 'home_screen.dart';
 
 // ── 동아리 온보딩 (만들기 / 참가하기 선택) ─────────────
 class ClubOnboardingScreen extends StatelessWidget {
-  const ClubOnboardingScreen({super.key});
+  final bool isPostLogin;
+  const ClubOnboardingScreen({super.key, this.isPostLogin = false});
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +50,7 @@ class ClubOnboardingScreen extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const ClubCreateScreen()),
+                            MaterialPageRoute(builder: (_) => ClubCreateScreen(isPostLogin: isPostLogin)),
                           );
                         },
                         child: Padding(
@@ -86,7 +87,7 @@ class ClubOnboardingScreen extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const ClubJoinScreen()),
+                            MaterialPageRoute(builder: (_) => ClubJoinScreen(isPostLogin: isPostLogin)),
                           );
                         },
                         child: Padding(
@@ -338,7 +339,8 @@ class _WelcomeSection extends StatelessWidget {
 
 // ── 동아리 만들기 화면 ──────────────────────────────
 class ClubCreateScreen extends StatefulWidget {
-  const ClubCreateScreen({super.key});
+  final bool isPostLogin;
+  const ClubCreateScreen({super.key, this.isPostLogin = false});
 
   @override
   State<ClubCreateScreen> createState() => _ClubCreateScreenState();
@@ -417,13 +419,15 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
 
     final displayName = await ApiClient.getDisplayName() ?? '';
 
-    await showWelcomeDialog(
-      context: context,
-      isCreator: true,
-      clubName: _createdClub!['club_name'],
-      role: 'super_admin',
-    );
-    if (!mounted) return;
+    if (!widget.isPostLogin) {
+      await showWelcomeDialog(
+        context: context,
+        isCreator: true,
+        clubName: _createdClub!['club_name'],
+        role: 'super_admin',
+      );
+      if (!mounted) return;
+    }
 
     final myClubs = await ApiClient.getMyClubs();
     if (!mounted) return;
@@ -530,7 +534,7 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
               onPressed: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => const ClubJoinScreen()),
+                  MaterialPageRoute(builder: (_) => ClubJoinScreen(isPostLogin: widget.isPostLogin)),
                 );
               },
               child: const Text('초대 코드로 참가하기'),
@@ -674,7 +678,8 @@ class _StepDot extends StatelessWidget {
 
 // ── 초대 코드로 참가 화면 ───────────────────────────
 class ClubJoinScreen extends StatefulWidget {
-  const ClubJoinScreen({super.key});
+  final bool isPostLogin;
+  const ClubJoinScreen({super.key, this.isPostLogin = false});
 
   @override
   State<ClubJoinScreen> createState() => _ClubJoinScreenState();
@@ -708,13 +713,15 @@ class _ClubJoinScreenState extends State<ClubJoinScreen> {
         final displayName = await ApiClient.getDisplayName() ?? '';
 
         // ── 환영 알림창 표시 ──
-        await showWelcomeDialog(
-          context: context,
-          isCreator: false,
-          clubName: data['club_name'],
-          role: data['role'],
-        );
-        if (!mounted) return;
+        if (!widget.isPostLogin) {
+          await showWelcomeDialog(
+            context: context,
+            isCreator: false,
+            clubName: data['club_name'],
+            role: data['role'],
+          );
+          if (!mounted) return;
+        }
 
         final myClubs = await ApiClient.getMyClubs();
         if (!mounted) return;
