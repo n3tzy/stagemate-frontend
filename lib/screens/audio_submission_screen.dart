@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import '../api/api_client.dart';
 import '../utils/file_validator.dart';
 
@@ -578,19 +580,40 @@ class _AdminSubmissionSheetState extends State<_AdminSubmissionSheet> {
 Future<void> _downloadFile(
     BuildContext context, String fileUrl, String fileName) async {
   final scaffoldMessenger = ScaffoldMessenger.of(context);
+  scaffoldMessenger.showSnackBar(
+    const SnackBar(content: Text('다운로드 중...'), duration: Duration(seconds: 60)),
+  );
   try {
-    scaffoldMessenger.showSnackBar(
-      const SnackBar(
-          content: Text('다운로드 중...'),
-          duration: Duration(seconds: 60)),
-    );
     final response = await http.get(Uri.parse(fileUrl));
     if (response.statusCode != 200) throw Exception('다운로드 실패');
-    final dir = Directory.systemTemp;
-    final file = File('${dir.path}/$fileName');
+
+    // Save to app documents directory (persistent, no permission needed)
+    final dir = await getApplicationDocumentsDirectory();
+    final audioDir = Directory('${dir.path}/audio');
+    await audioDir.create(recursive: true);
+    final file = File('${audioDir.path}/$fileName');
     await file.writeAsBytes(response.bodyBytes);
+
     scaffoldMessenger.hideCurrentSnackBar();
-    await OpenFile.open(file.path);
+
+    // Show system notification
+    const androidDetails = AndroidNotificationDetails(
+      'downloads',
+      '파일 다운로드',
+      channelDescription: '다운로드 완료 알림',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      icon: '@mipmap/ic_launcher',
+    );
+    const notifDetails = NotificationDetails(android: androidDetails);
+
+    await FlutterLocalNotificationsPlugin().show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      '다운로드 완료',
+      fileName,
+      notifDetails,
+      payload: file.path,
+    );
   } catch (e) {
     scaffoldMessenger.hideCurrentSnackBar();
     scaffoldMessenger.showSnackBar(
