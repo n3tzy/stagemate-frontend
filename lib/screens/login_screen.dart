@@ -254,7 +254,8 @@ class _LoginScreenState extends State<LoginScreen> {
         _showError(data['detail'] ?? '아이디 또는 비밀번호가 올바르지 않습니다.');
       }
     } catch (e) {
-      _showError(friendlyError(e));
+      debugPrint('▶▶▶ 일반 로그인 에러: $e');
+      _showError('[디버그] $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -311,7 +312,7 @@ class _LoginScreenState extends State<LoginScreen> {
           msg.contains('error 1')) {
         return;
       }
-      _showError(friendlyError(e));
+      _showError('[디버그] $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
