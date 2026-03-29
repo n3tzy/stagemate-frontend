@@ -464,10 +464,33 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       song['title'],
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text(
-                      '👥 ${(song['members'] as List).join(', ')}\n'
-                      '⏱ ${_formatTime((song['duration'] as num).toDouble())}'
-                      '  |  소개 ${_formatTime((song['intro_time'] as num?)?.toDouble() ?? 1.5)}',
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.people, size: 13),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                (song['members'] as List).join(', '),
+                                style: const TextStyle(fontSize: 12),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            const Icon(Icons.timer_outlined, size: 13),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${_formatTime((song['duration'] as num).toDouble())}  |  소개 ${_formatTime((song['intro_time'] as num?)?.toDouble() ?? 1.5)}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     isThreeLine: true,
                     trailing: IconButton(
@@ -527,8 +550,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   Expanded(
                     child: Text(
                       _result!['is_valid']
-                          ? '✅ 최적 순서 완성!'
-                          : '⚠️ 일부 제약 조건 미충족',
+                          ? '최적 순서 완성!'
+                          : '일부 제약 조건 미충족',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: _result!['is_valid']
@@ -544,7 +567,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       if (path != null && mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('💾 저장됐어요: ${path.split(Platform.pathSeparator).last}'),
+                            content: Text('저장됐어요: ${path.split(Platform.pathSeparator).last}'),
                             duration: const Duration(seconds: 4),
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -669,9 +692,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15),
                                 ),
-                                Text(
-                                  '👥 $members',
-                                  style: const TextStyle(fontSize: 12),
+                                Row(
+                                  children: [
+                                    Icon(Icons.people, size: 13, color: Colors.grey.shade600),
+                                    const SizedBox(width: 3),
+                                    Text(members, style: const TextStyle(fontSize: 12)),
+                                  ],
                                 ),
                               ],
                             ),
