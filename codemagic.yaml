@@ -1,0 +1,61 @@
+workflows:
+  android-release:
+    name: Android Release
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      android_signing:
+        - stagemate_keystore
+      vars:
+        KAKAO_APP_KEY: $KAKAO_APP_KEY
+
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Build Android AAB
+        script: |
+          flutter build appbundle --release \
+            --dart-define=API_BASE_URL=https://skillful-unity-production-e922.up.railway.app \
+            --dart-define=KAKAO_APP_KEY=$KAKAO_APP_KEY
+
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/apk/release/*.apk
+
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+
+  ios-release:
+    name: iOS Release
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: app.stagemate
+      vars:
+        KAKAO_APP_KEY: $KAKAO_APP_KEY
+
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Build iOS IPA
+        script: |
+          flutter build ipa --release \
+            --dart-define=API_BASE_URL=https://skillful-unity-production-e922.up.railway.app \
+            --dart-define=KAKAO_APP_KEY=$KAKAO_APP_KEY \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
