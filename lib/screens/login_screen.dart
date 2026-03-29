@@ -303,9 +303,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       final msg = e.toString().toLowerCase();
-      // 사용자가 직접 취소한 경우 에러 메시지 표시 안 함
-      if (msg.contains('canceled') || msg.contains('cancel') || msg.contains('user_cancelled') ||
-          msg.contains('webauthnticationsession error 1') || msg.contains('error 1')) {
+      if (msg.contains('canceled') || msg.contains('cancel') ||
+          msg.contains('user_cancelled') ||
+          msg.contains('webauthnticationsession error 1') ||
+          msg.contains('error 1')) {
         return;
       }
       _showError(friendlyError(e));
