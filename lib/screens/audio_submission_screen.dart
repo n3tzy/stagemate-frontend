@@ -4,6 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:open_file/open_file.dart';
 import '../api/api_client.dart';
 import '../utils/file_validator.dart';
 
@@ -573,6 +574,31 @@ class _AdminSubmissionSheetState extends State<_AdminSubmissionSheet> {
   }
 }
 
+// ── 파일 다운로드 헬퍼 ─────────────────────────────────
+Future<void> _downloadFile(
+    BuildContext context, String fileUrl, String fileName) async {
+  final scaffoldMessenger = ScaffoldMessenger.of(context);
+  try {
+    scaffoldMessenger.showSnackBar(
+      const SnackBar(
+          content: Text('다운로드 중...'),
+          duration: Duration(seconds: 60)),
+    );
+    final response = await http.get(Uri.parse(fileUrl));
+    if (response.statusCode != 200) throw Exception('다운로드 실패');
+    final dir = Directory.systemTemp;
+    final file = File('${dir.path}/$fileName');
+    await file.writeAsBytes(response.bodyBytes);
+    scaffoldMessenger.hideCurrentSnackBar();
+    await OpenFile.open(file.path);
+  } catch (e) {
+    scaffoldMessenger.hideCurrentSnackBar();
+    scaffoldMessenger.showSnackBar(
+      SnackBar(content: Text('다운로드 실패: ${e.toString()}')),
+    );
+  }
+}
+
 // ── 제출 항목 (플레이어 포함) ─────────────────────
 class _SubmissionTile extends StatefulWidget {
   final dynamic sub;
@@ -700,6 +726,15 @@ class _SubmissionTileState extends State<_SubmissionTile> {
                       color: colorScheme.primary,
                     ),
                     tooltip: isPlaying ? '일시정지' : '재생',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.download),
+                    tooltip: '다운로드',
+                    onPressed: () => _downloadFile(
+                      context,
+                      widget.sub['file_url'] as String,
+                      '${widget.sub['team_name'] ?? 'submission'}.mp3',
+                    ),
                   ),
                 ],
               ),
@@ -1179,6 +1214,15 @@ class _TeamLeaderSubmitSheetState
                                   ),
                                 ],
                               ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.download, size: 20),
+                              onPressed: () => _downloadFile(
+                                context,
+                                _mySubmission!['file_url'] as String,
+                                '${_mySubmission!['team_name'] ?? 'my_submission'}.mp3',
+                              ),
+                              tooltip: '내 음원 다운로드',
                             ),
                             IconButton(
                               icon: Icon(Icons.delete_outline,
