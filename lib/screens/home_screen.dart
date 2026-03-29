@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool get _isAdmin => _currentRole == 'admin' || _isSuperAdmin;
   bool get _canOptimizeSchedule => _isAdmin;
   bool get _canManageClub => _isSuperAdmin;
-  bool get _canSubmitAudio => _currentRole == 'team_leader' || _currentRole == 'admin' || _currentRole == 'super_admin';
+  bool get _canSubmitAudio => true;
 
   // 역할에 따라 탭 화면 구성
   List<Widget> get _screens {
@@ -919,6 +919,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 _currentRole = club['role'] as String;
                               });
                             },
+                            onAddClub: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ClubOnboardingScreen(isPostLogin: true),
+                                ),
+                              );
+                            },
                           ),
                         );
                       },
@@ -1040,11 +1048,13 @@ class _ClubSwitcherSheet extends StatelessWidget {
   final List<Map<String, dynamic>> clubs;
   final int currentClubId;
   final Future<void> Function(Map<String, dynamic> club) onSelect;
+  final VoidCallback? onAddClub;
 
   const _ClubSwitcherSheet({
     required this.clubs,
     required this.currentClubId,
     required this.onSelect,
+    this.onAddClub,
   });
 
   String _roleLabel(String role) {
@@ -1165,6 +1175,24 @@ class _ClubSwitcherSheet extends StatelessWidget {
                 ),
               );
             }),
+            const Divider(height: 24),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.add_circle_outline,
+                  color: colorScheme.primary),
+              title: Text(
+                '새 동아리 추가',
+                style: TextStyle(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: const Text('만들거나 코드로 참가할 수 있어요'),
+              onTap: () {
+                Navigator.pop(context);
+                onAddClub?.call();
+              },
+            ),
           ],
         ),
       ),
