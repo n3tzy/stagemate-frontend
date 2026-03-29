@@ -71,11 +71,7 @@ class _ClubProfileSheetState extends State<ClubProfileSheet> {
       if (mounted) setState(() { _profile = data; _isLoading = false; });
     } catch (e) {
       if (mounted) {
-        final rawMsg = e.toString();
-        final msg = rawMsg.startsWith('Exception: ')
-            ? rawMsg.replaceFirst('Exception: ', '')
-            : friendlyError(e);
-        setState(() { _error = msg; _isLoading = false; });
+        setState(() { _error = friendlyError(e); _isLoading = false; });
       }
     }
   }
@@ -353,12 +349,8 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
       }
     } catch (e) {
       if (mounted) {
-        final rawMsg = e.toString();
-        final msg = rawMsg.startsWith('Exception: ')
-            ? rawMsg.replaceFirst('Exception: ', '')
-            : friendlyError(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
+          SnackBar(content: Text(friendlyError(e))),
         );
       }
     } finally {

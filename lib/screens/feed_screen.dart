@@ -445,9 +445,8 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
       }
     } catch (e) {
       if (mounted) {
-        final msg = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     }

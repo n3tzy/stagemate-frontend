@@ -153,7 +153,7 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
           ..hideCurrentSnackBar()
           ..showSnackBar(
             SnackBar(
-              content: Text(e.toString().replaceFirst('Exception: ', '')),
+              content: Text(friendlyError(e)),
               backgroundColor: Colors.red,
             ),
           );
@@ -198,8 +198,7 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(e.toString().replaceFirst('Exception: ', '')),
+            content: Text(friendlyError(e)),
             backgroundColor: Colors.red,
           ),
         );
@@ -634,7 +633,7 @@ Future<void> _downloadFile(
   } catch (e) {
     scaffoldMessenger.hideCurrentSnackBar();
     scaffoldMessenger.showSnackBar(
-      SnackBar(content: Text('다운로드 실패: ${e.toString()}')),
+      SnackBar(content: Text('다운로드 실패: ${friendlyError(e)}')),
     );
   } finally {
     client.close();
@@ -1017,9 +1016,8 @@ class _TeamLeaderSubmitSheetState
       }
     } catch (e) {
       if (mounted) {
-        final msg = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
       }
     } finally {

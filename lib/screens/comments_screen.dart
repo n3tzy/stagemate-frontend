@@ -339,7 +339,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('수정 실패: $e')),
+                    SnackBar(content: Text('수정 실패: ${friendlyError(e)}')),
                   );
                 }
               }

@@ -36,7 +36,7 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
     _purchaseSub = InAppPurchase.instance.purchaseStream.listen(
       _onPurchaseUpdate,
       onError: (e) {
-        if (mounted) setState(() => _error = e.toString());
+        if (mounted) setState(() => _error = friendlyError(e));
       },
     );
     _load();
@@ -57,18 +57,10 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
     try {
       final sub = await ApiClient.getClubSubscription(widget.clubId);
       final available = await InAppPurchase.instance.isAvailable();
-      debugPrint('▶▶▶ IAP available: $available');
       if (available) {
         final resp = await InAppPurchase.instance
             .queryProductDetails({_kStandardId, _kProId});
-        debugPrint('▶▶▶ IAP products loaded: ${resp.productDetails.length}');
-        debugPrint('▶▶▶ IAP not found IDs: ${resp.notFoundIDs}');
-        for (final p in resp.productDetails) {
-          debugPrint('▶▶▶ IAP product: ${p.id} - ${p.price}');
-        }
         if (mounted) setState(() => _products = resp.productDetails);
-      } else {
-        debugPrint('▶▶▶ IAP not available on this device');
       }
       // 기존 구독 복원 (플랜 변경 시 필요)
       if (available) {
@@ -76,7 +68,6 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
       }
       loadedSub = sub;
     } catch (e) {
-      debugPrint('▶▶▶ IAP load error: $e');
       if (mounted) setState(() => _error = friendlyError(e));
     } finally {
       if (mounted) setState(() {
@@ -122,10 +113,9 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
 
       await InAppPurchase.instance.buyNonConsumable(purchaseParam: param);
     } catch (e) {
-      debugPrint('▶▶▶ IAP purchase error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('[디버그] $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
         setState(() => _purchasing = false);
       }
@@ -138,7 +128,6 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
 
       if (purchase.status == PurchaseStatus.restored) {
         // 기존 활성 구독 저장 (플랜 변경 시 참조)
-        debugPrint('▶▶▶ IAP restored: ${purchase.productID}');
         setState(() => _oldPurchase = purchase);
         if (purchase.pendingCompletePurchase) {
           await InAppPurchase.instance.completePurchase(purchase);
@@ -174,7 +163,7 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
         } catch (e) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('구독 확인 실패: ${e.toString().replaceFirst("Exception: ", "")}'), backgroundColor: Colors.red),
+              SnackBar(content: Text('구독 확인에 실패했습니다. ${friendlyError(e)}'), backgroundColor: Colors.red),
             );
           }
         }

@@ -14,10 +14,6 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   const kakaoKey = String.fromEnvironment('KAKAO_APP_KEY');
-  debugPrint('▶▶▶ KAKAO_APP_KEY 길이: ${kakaoKey.length}');
-  if (kakaoKey.isEmpty) {
-    debugPrint('▶▶▶ 경고: KAKAO_APP_KEY가 비어있습니다! --dart-define-from-file=dart_defines.json 확인 필요');
-  }
   KakaoSdk.init(nativeAppKey: kakaoKey);
 
   runApp(const MyApp());
