@@ -7,7 +7,14 @@ import 'post_create_screen.dart';
 import 'club_profile_sheet.dart';
 
 class FeedScreen extends StatefulWidget {
-  const FeedScreen({super.key});
+  final int? pendingPostId;
+  final VoidCallback? onPostIdConsumed;
+
+  const FeedScreen({
+    super.key,
+    this.pendingPostId,
+    this.onPostIdConsumed,
+  });
 
   @override
   State<FeedScreen> createState() => _FeedScreenState();
@@ -32,6 +39,21 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
       if (!_tabController.indexIsChanging) setState(() {});
     });
     _loadAll();
+    // Deep-link: open specific post on first mount
+    if (widget.pendingPostId != null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _openPostById(widget.pendingPostId!),
+      );
+    }
+  }
+
+  @override
+  void didUpdateWidget(FeedScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pendingPostId != widget.pendingPostId &&
+        widget.pendingPostId != null) {
+      _openPostById(widget.pendingPostId!);
+    }
   }
 
   @override
@@ -232,6 +254,59 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
         onChanged: _loadAll,
       ),
     );
+  }
+
+  Future<void> _openPostById(int postId) async {
+    if (!mounted) return;
+
+    // 1. Check already-loaded posts first (O(n) scan)
+    dynamic post;
+    try {
+      post = _clubPosts.firstWhere((p) => (p['id'] as num?)?.toInt() == postId);
+    } catch (_) {
+      post = null;
+    }
+    if (post == null) {
+      try {
+        post = _globalPosts.firstWhere((p) => (p['id'] as num?)?.toInt() == postId);
+      } catch (_) {
+        post = null;
+      }
+    }
+
+    // 2. Fetch from API if not in local list
+    if (post == null) {
+      try {
+        final result = await ApiClient.getPost(postId);
+        if (!result.containsKey('id')) {
+          // FastAPI 404 → {"detail": "Not found"} — no 'id' key
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('게시글을 찾을 수 없습니다.')),
+            );
+          }
+          return;
+        }
+        post = result;
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('게시글을 찾을 수 없습니다.')),
+          );
+        }
+        return;
+      }
+    }
+
+    // 3. Signal consumed BEFORE opening sheet (safe: sheet captures local `post`)
+    widget.onPostIdConsumed?.call();
+
+    // 4. Open comments sheet after current frame (required — must not call
+    //    showModalBottomSheet from initState/didUpdateWidget directly)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _showComments(post);
+    });
   }
 
   // ── 게시글 수정 다이얼로그 ─────────────────────────
@@ -1206,7 +1281,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
             decoration: BoxDecoration(
               border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
             ),
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            padding: EdgeInsets.fromLTRB(
+              16, 10, 16, 10 + MediaQuery.of(context).viewPadding.bottom,
+            ),
             child: Row(
               children: [
                 Expanded(
