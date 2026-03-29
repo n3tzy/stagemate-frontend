@@ -42,7 +42,7 @@
         <!-- 카카오 로그인 -->
         <meta-data
             android:name="com.kakao.sdk.AppKey"
-            android:value="KAKAO_KEY_REDACTED"/>
+            android:value="${kakaoAppKey}"/>
         <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
             android:exported="true">
@@ -50,7 +50,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:host="oauth" android:scheme="kakaoKAKAO_KEY_REDACTED" />
+                <data android:host="oauth" android:scheme="kakao${kakaoAppKey}" />
             </intent-filter>
         </activity>
         <!-- image_cropper (uCrop) -->

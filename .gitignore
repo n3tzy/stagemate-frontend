@@ -58,3 +58,6 @@ ios/.symlinks/
 ios/Flutter/Flutter.framework/
 ios/Flutter/Flutter.podspec
 .worktrees/
+
+# 시크릿 / 빌드 환경변수 (절대 커밋 금지)
+dart_defines.json

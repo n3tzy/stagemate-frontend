@@ -17,6 +17,16 @@ if (keyPropertiesFile.exists()) {
     keyProperties.load(FileInputStream(keyPropertiesFile))
 }
 
+// 시크릿은 local.properties 또는 환경변수에서 읽어옴 (git 제외)
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+val kakaoAppKey: String = System.getenv("KAKAO_APP_KEY")
+    ?: localProperties.getProperty("KAKAO_APP_KEY")
+    ?: ""
+
 android {
     namespace = "app.stagemate"
     compileSdk = flutter.compileSdkVersion
@@ -47,11 +57,26 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["kakaoAppKey"] = kakaoAppKey
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            // R8 난독화 + 코드 축소 (역컴파일 방어)
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug {
+            isMinifyEnabled = false
         }
     }
 }

@@ -11,7 +11,7 @@ import 'api/api_client.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  KakaoSdk.init(nativeAppKey: 'KAKAO_KEY_REDACTED');
+  KakaoSdk.init(nativeAppKey: const String.fromEnvironment('KAKAO_APP_KEY'));
   runApp(const MyApp());
 }
 

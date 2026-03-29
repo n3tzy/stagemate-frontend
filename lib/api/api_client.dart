@@ -44,11 +44,13 @@ String friendlyError(Object e) {
 
 // ── API 클라이언트 ────────────────────────────────────
 class ApiClient {
-  /// 배포 시: flutter build apk --dart-define=API_BASE_URL=https://your-app.railway.app
-  /// 개발 시: http://127.0.0.1:8000 사용
+  /// 빌드 시 반드시 주입:
+  ///   flutter run  --dart-define-from-file=dart_defines.json
+  ///   flutter build apk --release --dart-define-from-file=dart_defines.json
+  /// dart_defines.json 은 gitignore에 포함됨 (dart_defines.example.json 참고)
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://skillful-unity-production-e922.up.railway.app',
+    defaultValue: 'http://127.0.0.1:8000',  // 개발 localhost only
   );
 
   static const _storage = FlutterSecureStorage(

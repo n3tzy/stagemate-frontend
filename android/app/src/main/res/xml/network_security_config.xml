@@ -1,24 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  네트워크 보안 설정
-  - 프로덕션: HTTP 평문 통신 완전 차단 (HTTPS만 허용)
-  - 개발 중:  localhost(에뮬레이터/로컬 PC) HTTP 허용
+  Release 빌드용 네트워크 보안 설정
+  - HTTP 평문 통신 완전 차단 (HTTPS만 허용)
+  - 사용자 설치 CA 불신 (시스템 CA만 신뢰)
 -->
 <network-security-config>
-
-  <!-- 기본: cleartext(HTTP) 완전 차단 -->
   <base-config cleartextTrafficPermitted="false">
     <trust-anchors>
-      <!-- 시스템 CA만 신뢰 (사용자 설치 CA 불신) -->
       <certificates src="system" />
     </trust-anchors>
   </base-config>
-
-  <!-- 개발 환경 예외: 에뮬레이터에서 로컬 백엔드(127.0.0.1) HTTP 허용 -->
-  <domain-config cleartextTrafficPermitted="true">
-    <domain includeSubdomains="false">127.0.0.1</domain>
-    <domain includeSubdomains="false">10.0.2.2</domain>  <!-- Android 에뮬레이터 호스트 PC -->
-    <domain includeSubdomains="false">localhost</domain>
-  </domain-config>
-
 </network-security-config>
