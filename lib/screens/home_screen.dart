@@ -38,6 +38,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
+  int? _pendingPostId;
   String? _avatarUrl;
   int _unreadCount = 0;
   bool _notificationsEnabled = true;
@@ -59,7 +60,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _loadUnreadCount();
     _loadNotificationSetting();
     FcmService.init(
-      onPostTap: (postId) => setState(() => _currentIndex = 1),
+      onPostTap: (postId) => setState(() {
+        _pendingPostId = postId;
+        _currentIndex = 1; // Feed is always index 1 (see _screens getter — unconditional, position 1)
+      }),
     );
   }
 
@@ -129,7 +133,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<Widget> get _screens {
     return [
       const NoticeScreen(),
-      const FeedScreen(),
+      FeedScreen(
+        pendingPostId: _pendingPostId,
+        onPostIdConsumed: () => setState(() => _pendingPostId = null),
+      ),
       if (_canOptimizeSchedule) const ScheduleScreen(),
       const GroupScreen(),
       const BookingScreen(),
@@ -992,8 +999,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     MaterialPageRoute(
                       builder: (_) => NotificationsScreen(
                         onPostTap: (postId) {
-                          // Switch to feed tab (index 1 = 피드)
-                          setState(() => _currentIndex = 1);
+                          // NotificationsScreen already calls Navigator.pop before this callback fires.
+                          // Do NOT call Navigator.pop here.
+                          setState(() {
+                            _pendingPostId = postId;
+                            _currentIndex = 1; // Feed is always index 1 (see _screens getter — unconditional, position 1)
+                          });
                         },
                       ),
                     ),
