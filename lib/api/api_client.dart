@@ -295,6 +295,15 @@ class ApiClient {
     return data;
   }
 
+  static Future<Map<String, dynamic>> getPost(int postId) async {
+    final headers = await _authOnlyHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/posts/$postId'),
+      headers: headers,
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
   // ── 동아리 API ────────────────────────────────
   static Future<Map<String, dynamic>> createClub(String name) async {
     final response = await http.post(
