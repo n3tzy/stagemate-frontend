@@ -638,11 +638,13 @@ class ApiClient {
     return jsonDecode(utf8.decode(response.bodyBytes));
   }
 
-  static Future<Map<String, dynamic>> createPostComment(int postId, String content) async {
+  static Future<Map<String, dynamic>> createPostComment(int postId, String content, {int? parentId}) async {
+    final body = <String, dynamic>{'content': content};
+    if (parentId != null) body['parent_id'] = parentId;
     final response = await http.post(
       Uri.parse('$baseUrl/posts/$postId/comments'),
       headers: await _headers(),
-      body: jsonEncode({'content': content}),
+      body: jsonEncode(body),
     ).timeout(_timeout);
     return _parseResponse(response);
   }

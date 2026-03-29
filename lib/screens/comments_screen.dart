@@ -29,6 +29,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
   final _ctrl = TextEditingController();
   OverlayEntry? _commentMenuOverlay;
   final _scrollController = ScrollController();
+  Map<String, dynamic>? _replyingTo;
+  final _textFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -41,6 +43,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     _hideCommentMenu();
     _ctrl.dispose();
     _scrollController.dispose();
+    _textFocusNode.dispose();
     super.dispose();
   }
 
@@ -94,6 +97,16 @@ class _CommentsScreenState extends State<CommentsScreen> {
                         if (isMine) ...[
                           ListTile(
                             dense: true,
+                            leading: const Icon(Icons.reply, size: 18),
+                            title: const Text('답글'),
+                            onTap: () {
+                              _hideCommentMenu();
+                              setState(() => _replyingTo = comment as Map<String, dynamic>);
+                              FocusScope.of(context).requestFocus(_textFocusNode);
+                            },
+                          ),
+                          ListTile(
+                            dense: true,
                             leading: const Icon(Icons.edit_outlined, size: 18),
                             title: const Text('수정'),
                             onTap: () {
@@ -111,6 +124,16 @@ class _CommentsScreenState extends State<CommentsScreen> {
                             },
                           ),
                         ] else ...[
+                          ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.reply, size: 18),
+                            title: const Text('답글'),
+                            onTap: () {
+                              _hideCommentMenu();
+                              setState(() => _replyingTo = comment as Map<String, dynamic>);
+                              FocusScope.of(context).requestFocus(_textFocusNode);
+                            },
+                          ),
                           ListTile(
                             dense: true,
                             leading: const Icon(Icons.flag_outlined, size: 18),
@@ -157,7 +180,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
     if (text.isEmpty || _submitting) return;
     setState(() => _submitting = true);
     try {
-      await ApiClient.createPostComment(widget.post['id'], text);
+      final parentId = _replyingTo?['id'] as int?;
+      await ApiClient.createPostComment(widget.post['id'], text, parentId: parentId);
+      setState(() => _replyingTo = null);
       _ctrl.clear();
       await _load();
       widget.onChanged();
@@ -329,8 +354,14 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   Widget _buildCommentTile(dynamic c, ColorScheme colorScheme) {
     final isMine = (c['author_id'] as int?) == widget.myUserId;
+    final isReply = (c['parent_id'] as int?) != null;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+      padding: EdgeInsets.only(
+        top: 6,
+        bottom: 6,
+        left: isReply ? 48.0 : 16.0,
+        right: 16,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -542,60 +573,86 @@ class _CommentsScreenState extends State<CommentsScreen> {
               ],
             ),
           ),
-        ],
-      ),
-      // Comment input — rises above keyboard automatically
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: colorScheme.outlineVariant),
+          // Comment input — rises above keyboard automatically
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: colorScheme.outlineVariant),
+              ),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              16, 8, 16,
+              8 + MediaQuery.of(context).viewPadding.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_replyingTo != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        Icon(Icons.reply, size: 14, color: colorScheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${_replyingTo!['author'] as String? ?? '알 수 없음'}에게 답글',
+                          style: TextStyle(fontSize: 12, color: colorScheme.primary),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () => setState(() => _replyingTo = null),
+                          child: Icon(Icons.close, size: 14, color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _ctrl,
+                        focusNode: _textFocusNode,
+                        decoration: InputDecoration(
+                          hintText: '댓글을 입력하세요...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: colorScheme.surfaceContainerHighest,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          isDense: true,
+                        ),
+                        maxLines: null,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _submit(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _submitting
+                        ? const SizedBox(
+                            width: 36,
+                            height: 36,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : FilledButton(
+                            onPressed: _submit,
+                            style: FilledButton.styleFrom(
+                              shape: const CircleBorder(),
+                              padding: const EdgeInsets.all(10),
+                              minimumSize: const Size(40, 40),
+                            ),
+                            child: const Icon(Icons.send, size: 18),
+                          ),
+                  ],
+                ),
+              ],
             ),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _ctrl,
-                  decoration: InputDecoration(
-                    hintText: '댓글을 입력하세요...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: colorScheme.surfaceContainerHighest,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    isDense: true,
-                  ),
-                  maxLines: null,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => _submit(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              _submitting
-                  ? const SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : FilledButton(
-                      onPressed: _submit,
-                      style: FilledButton.styleFrom(
-                        shape: const CircleBorder(),
-                        padding: const EdgeInsets.all(10),
-                        minimumSize: const Size(40, 40),
-                      ),
-                      child: const Icon(Icons.send, size: 18),
-                    ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
