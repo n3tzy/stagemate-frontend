@@ -959,8 +959,14 @@ class _TeamLeaderSubmitSheetState
       if (mounted) {
         setState(() => _selectedFile = null);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('음원이 제출됐습니다! 🎵'),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.music_note, color: Theme.of(context).colorScheme.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text('음원이 제출됐습니다!'),
+              ],
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -1330,6 +1336,15 @@ class _TeamLeaderSubmitSheetState
                   ),
                   const SizedBox(height: 8),
                 ],
+
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    '본인이 저작권을 보유한 음원(자작곡, 편곡 등)만 업로드해 주세요.',
+                    style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
 
                 if (!_isUploading)
                   OutlinedButton.icon(
