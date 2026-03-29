@@ -780,6 +780,7 @@ class _TeamLeaderSubmitSheetState
   bool _isLoading = true;
   bool _isUploading = false;
   String _uploadStatus = '';
+  PlatformFile? _selectedFile;
 
   final _teamNameCtrl = TextEditingController();
   final _songTitleCtrl = TextEditingController();
@@ -837,14 +838,19 @@ class _TeamLeaderSubmitSheetState
     }
   }
 
-  Future<void> _pickAndSubmit() async {
+  Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['mp3'],
-      allowMultiple: false,
+      withData: true,
     );
     if (result == null || result.files.isEmpty) return;
-    final picked = result.files.first;
+    setState(() => _selectedFile = result.files.first);
+  }
+
+  Future<void> _submitFile() async {
+    final picked = _selectedFile;
+    if (picked == null) return;
     if (picked.path == null) return;
 
     final teamName = _teamNameCtrl.text.trim();
@@ -916,6 +922,7 @@ class _TeamLeaderSubmitSheetState
       );
 
       if (mounted) {
+        setState(() => _selectedFile = null);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('음원이 제출됐습니다! 🎵'),
@@ -1224,29 +1231,84 @@ class _TeamLeaderSubmitSheetState
                 ),
                 const SizedBox(height: 20),
 
-                if (_isUploading) ...[
-                  const LinearProgressIndicator(),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Text(
-                      _uploadStatus,
-                      style: TextStyle(
-                          fontSize: 12, color: colorScheme.outline),
+                if (_selectedFile != null && !_isUploading) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.audio_file,
+                            color: colorScheme.primary, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _selectedFile!.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w500),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                '${(_selectedFile!.size / 1024 / 1024).toStringAsFixed(1)} MB',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: colorScheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () =>
+                              setState(() => _selectedFile = null),
+                          tooltip: '선택 취소',
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
                 ],
 
-                FilledButton.icon(
-                  onPressed: _isUploading ? null : _pickAndSubmit,
-                  icon: const Icon(Icons.upload_file),
-                  label: Text(_mySubmission != null
-                      ? '재제출 (MP3)'
-                      : 'MP3 파일 선택 & 제출'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                if (_isUploading) ...[
+                  const LinearProgressIndicator(),
+                  const SizedBox(height: 6),
+                  Text(
+                    _uploadStatus,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                ],
+
+                if (!_isUploading)
+                  OutlinedButton.icon(
+                    onPressed: _pickFile,
+                    icon: const Icon(Icons.folder_open, size: 18),
+                    label: Text(_selectedFile != null
+                        ? '다른 파일 선택'
+                        : 'MP3 파일 선택'),
+                    style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(44)),
+                  ),
+
+                const SizedBox(height: 8),
+
+                if (_selectedFile != null)
+                  FilledButton.icon(
+                    onPressed: _isUploading ? null : _submitFile,
+                    icon: const Icon(Icons.upload, size: 18),
+                    label: Text(
+                        _mySubmission != null ? '재제출하기' : '제출하기'),
+                    style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(44)),
+                  ),
                 const SizedBox(height: 8),
                 Text(
                   'MP3 파일만 허용 · 최대 200MB',
