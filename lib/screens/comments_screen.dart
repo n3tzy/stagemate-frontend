@@ -163,7 +163,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    if (_comments.isEmpty) setState(() => _loading = true);
     try {
       final results = await Future.wait([
         ApiClient.getPost(_post['id'] as int),
@@ -564,9 +564,13 @@ class _CommentsScreenState extends State<CommentsScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView(
-              controller: _scrollController,
-              padding: const EdgeInsets.only(bottom: 8),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await _load();
+              },
+              child: ListView(
+                controller: _scrollController,
+                padding: const EdgeInsets.only(bottom: 8),
               children: [
                 // Post author + timestamp
                 Padding(
@@ -682,6 +686,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     (i) => _buildCommentTile(_comments[i], colorScheme),
                   ),
               ],
+            ),
             ),
           ),
           // Comment input — rises above keyboard automatically
