@@ -11,6 +11,7 @@ import 'club_manage_screen.dart';
 import 'club_onboarding_screen.dart';
 import 'login_screen.dart';
 import '../api/api_client.dart';
+import '../utils/file_validator.dart';
 import '../services/fcm_service.dart';
 import 'feed_screen.dart';
 import 'my_activity_screen.dart';
@@ -581,6 +582,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final publicUrl = presigned['public_url'] as String;
 
       final bytes = await File(cropped.path).readAsBytes();
+
+      // 매직 바이트 + 악성 스크립트 시그니처 검증
+      final validation = FileValidator.validateJpeg(bytes);
+      if (!validation.isValid) throw Exception(validation.error);
+
       final res = await http.put(
         Uri.parse(uploadUrl),
         headers: {'Content-Type': 'image/jpeg'},

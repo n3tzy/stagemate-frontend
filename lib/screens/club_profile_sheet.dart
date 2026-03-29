@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import '../api/api_client.dart';
+import '../utils/file_validator.dart';
 
 // ── 컬러 칩에 쓸 6가지 프리셋 ──────────────────────────
 const _kColorPresets = [
@@ -260,6 +261,11 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
     final publicUrl = presigned['public_url'] as String;
 
     final bytes = await File(picked.path).readAsBytes();
+
+    // 매직 바이트 + 악성 스크립트 시그니처 검증
+    final validation = FileValidator.validateJpeg(bytes);
+    if (!validation.isValid) throw Exception(validation.error);
+
     final res = await http.put(
       Uri.parse(uploadUrl),
       body: bytes,

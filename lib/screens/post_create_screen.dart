@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import '../api/api_client.dart';
+import '../utils/file_validator.dart';
 
 class PostCreateScreen extends StatefulWidget {
   final bool isGlobal;
@@ -170,6 +171,20 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
         final publicUrl = presigned['public_url'] as String;
 
         final bytes = await File(file.path).readAsBytes();
+
+        // 매직 바이트 + 악성 스크립트 시그니처 검증
+        final validation = isVideo
+            ? FileValidator.validateVideoByExtension(bytes, ext)
+            : FileValidator.validateImageByExtension(bytes, ext);
+        if (!validation.isValid) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(validation.error ?? '파일 검증 실패: $filename')),
+            );
+          }
+          continue;
+        }
+
         final success = await _uploadFile(uploadUrl, bytes, contentType);
         if (success) {
           urls.add(publicUrl);

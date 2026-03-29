@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../api/api_client.dart';
+import '../utils/file_validator.dart';
 
 // ── 음원 제출 메인 탭 화면 ──────────────────────────
 class AudioSubmissionScreen extends StatefulWidget {
@@ -855,8 +856,16 @@ class _TeamLeaderSubmitSheetState
       final publicUrl = presigned['public_url'] as String;
       final storageKey = presigned['key'] as String;
 
-      setState(() => _uploadStatus = '파일 업로드 중...');
+      setState(() => _uploadStatus = '파일 검증 중...');
       final bytes = await file.readAsBytes();
+
+      // 매직 바이트 + 악성 스크립트 검증
+      final validation = FileValidator.validateMp3(bytes);
+      if (!validation.isValid) {
+        throw Exception(validation.error);
+      }
+
+      setState(() => _uploadStatus = '파일 업로드 중...');
       final uploadResponse = await http.put(
         Uri.parse(uploadUrl),
         headers: {'Content-Type': 'audio/mpeg'},
