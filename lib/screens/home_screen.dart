@@ -923,94 +923,95 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: colorScheme.primaryContainer,
-        title: Row(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'StageMate',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            // 1줄: StageMate + 내 이름 배지
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'StageMate',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _roleBadgeColor(colorScheme),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  if (widget.clubs.length >= 2)
-                    GestureDetector(
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                          ),
-                          builder: (_) => _ClubSwitcherSheet(
-                            clubs: widget.clubs,
-                            currentClubId: _currentClubId,
-                            onSelect: (club) async {
-                              await ApiClient.setClubInfo(
-                                (club['club_id'] as num).toInt(),
-                                club['club_name'] as String,
-                                club['role'] as String,
-                              );
-                              setState(() {
-                                _currentClubId = (club['club_id'] as num).toInt();
-                                _currentClubName = club['club_name'] as String;
-                                _currentRole = club['role'] as String;
-                                _buildScreens();
-                              });
-                            },
-                            onAddClub: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const ClubOnboardingScreen(isPostLogin: true),
-                                ),
-                              );
-                            },
+                  child: Text(
+                    widget.displayName,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            // 2줄: 동아리명 (스위칭 가능하면 탭 가능)
+            if (widget.clubs.length >= 2)
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                    context: context,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    builder: (_) => _ClubSwitcherSheet(
+                      clubs: widget.clubs,
+                      currentClubId: _currentClubId,
+                      onSelect: (club) async {
+                        await ApiClient.setClubInfo(
+                          (club['club_id'] as num).toInt(),
+                          club['club_name'] as String,
+                          club['role'] as String,
+                        );
+                        setState(() {
+                          _currentClubId = (club['club_id'] as num).toInt();
+                          _currentClubName = club['club_name'] as String;
+                          _currentRole = club['role'] as String;
+                          _buildScreens();
+                        });
+                      },
+                      onAddClub: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ClubOnboardingScreen(isPostLogin: true),
                           ),
                         );
                       },
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.swap_horiz, size: 12, color: Colors.white70),
-                          const SizedBox(width: 3),
-                          Text(
-                            '$_currentClubName · ${_roleLabel(_currentRole)}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: colorScheme.onPrimaryContainer.withOpacity(0.85),
-                            ),
-                          ),
-                          const Icon(Icons.expand_more, size: 13, color: Colors.white70),
-                        ],
-                      ),
-                    )
-                  else
+                    ),
+                  );
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.swap_horiz, size: 13, color: colorScheme.primary),
+                    const SizedBox(width: 3),
                     Text(
-                      _currentClubName,
+                      '$_currentClubName · ${_roleLabel(_currentRole)}',
                       style: TextStyle(
                         fontSize: 11,
-                        color: colorScheme.onPrimaryContainer.withOpacity(0.7),
+                        color: colorScheme.onPrimaryContainer.withOpacity(0.85),
                       ),
                     ),
-                ],
-              ),
-            ),
-            // 역할 배지
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _roleBadgeColor(colorScheme),
-                  borderRadius: BorderRadius.circular(12),
+                    Icon(Icons.expand_more, size: 13, color: colorScheme.primary),
+                  ],
                 ),
-                child: Text(
-                  widget.displayName,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-                  overflow: TextOverflow.ellipsis,
+              )
+            else
+              Text(
+                '$_currentClubName · ${_roleLabel(_currentRole)}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: colorScheme.onPrimaryContainer.withOpacity(0.7),
                 ),
               ),
-            ),
           ],
         ),
         actions: [

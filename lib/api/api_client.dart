@@ -53,6 +53,7 @@ class ApiClient {
     defaultValue: 'http://127.0.0.1:8000',  // 개발 localhost only
   );
 
+
   static const _storage = FlutterSecureStorage(
     // iOS: 첫 잠금 해제 후 접근 가능, 기기 이전 시 복사 불가 (보안 강화)
     // first_unlock_this_device = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
@@ -416,11 +417,12 @@ class ApiClient {
   static Future<Map<String, dynamic>> createNotice({
     required String title,
     required String content,
+    List<String> mediaUrls = const [],
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/notices'),
       headers: await _headers(),
-      body: jsonEncode({'title': title, 'content': content}),
+      body: jsonEncode({'title': title, 'content': content, 'media_urls': mediaUrls}),
     ).timeout(_timeout);
     return _parseResponse(response);
   }

@@ -450,9 +450,12 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
             const SizedBox(height: 16),
             Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _buildBookingList(colorScheme),
+              child: RefreshIndicator(
+                onRefresh: _loadBookings,
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildBookingList(colorScheme),
+              ),
             ),
           ],
         ),
@@ -468,24 +471,31 @@ class _BookingScreenState extends State<BookingScreen> {
     final conflicts = _bookingData!['conflicts'] as List;
 
     if (bookings.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.meeting_room, size: 56, color: colorScheme.outline),
-            const SizedBox(height: 8),
-            Text(
-              '$_selectedDate 예약 없음',
-              style: TextStyle(color: colorScheme.outline),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: 200,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.meeting_room, size: 56, color: colorScheme.outline),
+                const SizedBox(height: 8),
+                Text(
+                  '$_selectedDate 예약 없음',
+                  style: TextStyle(color: colorScheme.outline),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
     final grouped = _groupByRoom(bookings);
 
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
         if (conflicts.isNotEmpty) ...[
           Container(

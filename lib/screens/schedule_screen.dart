@@ -408,7 +408,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         title: const Text('무대 순서 최적화'),
         backgroundColor: colorScheme.primaryContainer,
       ),
-      body: SingleChildScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async => setState(() {}),
+        child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -733,6 +736,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ],
         ),
       ),
+      ), // RefreshIndicator
     );
   }
 }

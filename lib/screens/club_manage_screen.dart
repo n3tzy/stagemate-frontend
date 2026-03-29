@@ -194,7 +194,8 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     try {
       final data = await ApiClient.resetMemberPassword(
           _clubId!, member['user_id']);
-      final tempPwd = data['temp_password'] ?? '';
+      final tempPwd = data['temp_password'] as String?;
+      final sentToEmail = data['sent_to_email'] == true;
       if (!mounted) return;
 
       await showDialog(
@@ -206,50 +207,60 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${member['display_name']}님의 임시 비밀번호:'),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(ctx).colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(8),
+              if (sentToEmail) ...[
+                Text('${member['display_name']}님에게 임시 비밀번호가 이메일로 발송됐습니다.'),
+                const SizedBox(height: 8),
+                const Text(
+                  '멤버가 이메일을 확인한 후 로그인하도록 안내해 주세요.',
+                  style: TextStyle(fontSize: 12),
                 ),
-                child: SelectableText(
-                  tempPwd,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 4,
-                    fontFamily: 'monospace',
+              ] else ...[
+                Text('${member['display_name']}님의 임시 비밀번호:'),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  textAlign: TextAlign.center,
+                  child: SelectableText(
+                    tempPwd ?? '',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 4,
+                      fontFamily: 'monospace',
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '이 비밀번호를 해당 멤버에게 전달하세요.\n'
-                '멤버는 로그인 후 비밀번호를 변경할 수 있습니다.',
-                style: TextStyle(fontSize: 12),
-              ),
+                const SizedBox(height: 12),
+                const Text(
+                  '이 비밀번호를 해당 멤버에게 직접 전달하세요.\n'
+                  '멤버는 로그인 후 비밀번호를 변경할 수 있습니다.',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
             ],
           ),
           actions: [
-            FilledButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: tempPwd));
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(
-                    content: Text('임시 비밀번호가 복사됐습니다.'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.copy, size: 16),
-              label: const Text('복사'),
-            ),
+            if (!sentToEmail && tempPwd != null)
+              FilledButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: tempPwd));
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(
+                      content: Text('임시 비밀번호가 복사됐습니다.'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.copy, size: 16),
+                label: const Text('복사'),
+              ),
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: const Text('닫기'),

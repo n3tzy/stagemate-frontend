@@ -349,7 +349,10 @@ class _GroupScreenState extends State<GroupScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: RefreshIndicator(
+        onRefresh: _loadAvailability,
+        child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -806,6 +809,7 @@ class _GroupScreenState extends State<GroupScreen> {
           ],
         ),
       ),
+      ), // RefreshIndicator
     );
   }
 }

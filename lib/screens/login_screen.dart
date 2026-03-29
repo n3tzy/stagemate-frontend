@@ -326,10 +326,10 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.theater_comedy_outlined,
-                size: 64,
-                color: Theme.of(context).colorScheme.primary,
+              Image.asset(
+                'assets/images/logo.png',
+                width: 120,
+                height: 120,
               ),
               const SizedBox(height: 8),
               Text(

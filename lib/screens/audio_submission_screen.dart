@@ -278,6 +278,7 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
                       ),
                     )
                   : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(12),
                       itemCount: _performances.length,
                       itemBuilder: (_, i) => _PerformanceCard(
@@ -581,37 +582,53 @@ Future<void> _downloadFile(
     BuildContext context, String fileUrl, String fileName) async {
   final scaffoldMessenger = ScaffoldMessenger.of(context);
   scaffoldMessenger.showSnackBar(
-    const SnackBar(content: Text('다운로드 중...'), duration: Duration(seconds: 60)),
+    const SnackBar(
+      content: Row(
+        children: [
+          SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+          SizedBox(width: 12),
+          Text('다운로드 중...'),
+        ],
+      ),
+      duration: Duration(minutes: 10),
+    ),
   );
+  final client = http.Client();
   try {
-    final response = await http.get(Uri.parse(fileUrl));
-    if (response.statusCode != 200) throw Exception('다운로드 실패');
+    // 스트리밍 다운로드: 전체를 메모리에 올리지 않고 청크 단위로 파일에 씀
+    final request = http.Request('GET', Uri.parse(fileUrl));
+    final streamedResponse = await client.send(request)
+        .timeout(const Duration(minutes: 5));
 
-    // Save to app documents directory (persistent, no permission needed)
+    if (streamedResponse.statusCode != 200) {
+      throw Exception('서버 응답 오류 (${streamedResponse.statusCode})');
+    }
+
     final dir = await getApplicationDocumentsDirectory();
     final audioDir = Directory('${dir.path}/audio');
     await audioDir.create(recursive: true);
     final file = File('${audioDir.path}/$fileName');
-    await file.writeAsBytes(response.bodyBytes);
+
+    final sink = file.openWrite();
+    await streamedResponse.stream.pipe(sink);
+    await sink.flush();
+    await sink.close();
 
     scaffoldMessenger.hideCurrentSnackBar();
 
-    // Show system notification
     const androidDetails = AndroidNotificationDetails(
       'downloads',
       '파일 다운로드',
       channelDescription: '다운로드 완료 알림',
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
-      icon: '@mipmap/ic_launcher',
+      icon: '@mipmap/launcher_icon',
     );
-    const notifDetails = NotificationDetails(android: androidDetails);
-
     await FlutterLocalNotificationsPlugin().show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      DateTime.now().millisecondsSinceEpoch % 100000,
       '다운로드 완료',
       fileName,
-      notifDetails,
+      const NotificationDetails(android: androidDetails),
       payload: file.path,
     );
   } catch (e) {
@@ -619,6 +636,8 @@ Future<void> _downloadFile(
     scaffoldMessenger.showSnackBar(
       SnackBar(content: Text('다운로드 실패: ${e.toString()}')),
     );
+  } finally {
+    client.close();
   }
 }
 

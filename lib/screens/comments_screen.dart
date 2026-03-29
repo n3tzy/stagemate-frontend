@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
 import 'package:http/http.dart' as http;
-import 'package:open_file/open_file.dart';
 import '../api/api_client.dart';
-import 'feed_screen.dart' show FeedUserAvatar, FeedMediaThumbnail;
+import 'feed_screen.dart' show FeedUserAvatar;
 
 class CommentsScreen extends StatefulWidget {
   final dynamic post;
@@ -417,11 +417,23 @@ class _CommentsScreenState extends State<CommentsScreen> {
     ));
     try {
       final response = await http.get(Uri.parse(url));
-      final ext = url.split('.').last.split('?').first;
-      final file = File('${Directory.systemTemp.path}/media_${DateTime.now().millisecondsSinceEpoch}.$ext');
-      await file.writeAsBytes(response.bodyBytes);
+      final ext = url.split('.').last.split('?').first.toLowerCase();
+      final isVideo = ['mp4', 'mov', 'webm', 'avi'].contains(ext);
+      final ts = DateTime.now().millisecondsSinceEpoch;
+
+      if (isVideo) {
+        final tempFile = File('${Directory.systemTemp.path}/dl_$ts.$ext');
+        await tempFile.writeAsBytes(response.bodyBytes);
+        await Gal.putVideo(tempFile.path);
+        await tempFile.delete();
+      } else {
+        await Gal.putImageBytes(response.bodyBytes);
+      }
       messenger.hideCurrentSnackBar();
-      await OpenFile.open(file.path);
+      messenger.showSnackBar(const SnackBar(
+        content: Text('갤러리에 저장됐습니다!'),
+        backgroundColor: Colors.green,
+      ));
     } catch (_) {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(const SnackBar(content: Text('다운로드 실패')));
@@ -570,6 +582,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
               },
               child: ListView(
                 controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: 8),
               children: [
                 // Post author + timestamp

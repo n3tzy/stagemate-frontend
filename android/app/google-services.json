@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "278670024754",
+    "project_id": "stagemate-dd40a",
+    "storage_bucket": "stagemate-dd40a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:278670024754:android:de33c237cbf5b8cc5c5c2b",
+        "android_client_info": {
+          "package_name": "app.stagemate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4jRzKobIHlOBUEqUllSCHaqJEaZx7FLA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

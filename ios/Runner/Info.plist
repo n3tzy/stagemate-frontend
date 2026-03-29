@@ -95,5 +95,26 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- 카카오 로그인 URL 스킴 -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kakaoe7ed5581ca9a2f18837aefb77b5a4f3f</string>
+			</array>
+		</dict>
+	</array>
+	<!-- 카카오톡 앱 설치 여부 확인을 위한 쿼리 스킴 -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>kakaokompassauth</string>
+		<string>storykompassauth</string>
+		<string>kakaolink</string>
+		<string>kakaotalk</string>
+		<string>kakaostory</string>
+	</array>
 </dict>
 </plist>

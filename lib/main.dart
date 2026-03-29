@@ -1,15 +1,57 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_jailbreak_detection/flutter_jailbreak_detection.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/club_onboarding_screen.dart';
 import 'api/api_client.dart';
 
+/// Railway 백엔드 호스트에 대해서만 SSL Pinning 적용.
+/// HTTPS 환경에서 ISRG Root X1(Let's Encrypt 루트 CA)만 신뢰.
+/// Firebase, Kakao 등 다른 HTTPS 연결에는 영향을 주지 않음.
+class _StageMateHttpOverrides extends HttpOverrides {
+  final List<int> _certBytes;
+  final String _backendHost;
+
+  _StageMateHttpOverrides(this._certBytes, this._backendHost);
+
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    // 백엔드 호스트에만 피닝 적용: 커스텀 SecurityContext 사용
+    // 다른 요청(Firebase, Kakao)은 시스템 기본 신뢰 저장소 유지
+    if (_backendHost.isNotEmpty && _backendHost != 'localhost' && _backendHost != '127.0.0.1') {
+      try {
+        final ctx = SecurityContext(withTrustedRoots: true)
+          ..setTrustedCertificatesBytes(_certBytes);
+        return super.createHttpClient(ctx);
+      } catch (_) {
+        // 인증서 로드 실패 → 기본으로 fallback
+      }
+    }
+    return super.createHttpClient(context);
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // SSL Pinning 설정 (HTTPS 환경에서만)
+  const backendUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://127.0.0.1:8000');
+  if (backendUrl.startsWith('https://')) {
+    try {
+      final certPem = await rootBundle.loadString('assets/certs/isrg_root_x1.pem');
+      final host = Uri.parse(backendUrl).host;
+      HttpOverrides.global = _StageMateHttpOverrides(certPem.codeUnits, host);
+    } catch (_) {
+      // 인증서 로드 실패해도 앱 실행 차단하지 않음
+    }
+  }
+
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   KakaoSdk.init(nativeAppKey: const String.fromEnvironment('KAKAO_APP_KEY'));
   runApp(const MyApp());
@@ -83,6 +125,34 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkToken() async {
     await Future.delayed(const Duration(milliseconds: 300));
 
+    // 0. 루팅/탈옥 탐지 — 감지 시 사용 제한 경고
+    try {
+      final isJailbroken = await FlutterJailbreakDetection.jailbroken;
+      final isDeveloperMode = await FlutterJailbreakDetection.developerMode;
+      if ((isJailbroken || isDeveloperMode) && mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text('보안 경고'),
+            content: const Text(
+              '루팅/탈옥된 기기가 감지됐습니다.\n'
+              '앱 데이터 보안을 위해 일부 기능이 제한될 수 있습니다.\n\n'
+              '계속 사용할 경우 계정 보안 책임은 사용자에게 있습니다.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('확인'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (_) {
+      // 탐지 실패 시 앱 실행 차단하지 않음
+    }
+
     // 1. 로컬 토큰 확인
     final token = await ApiClient.getToken();
     if (token == null) {
@@ -152,10 +222,10 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.theater_comedy_outlined,
-              size: 72,
-              color: Theme.of(context).colorScheme.primary,
+            Image.asset(
+              'assets/images/logo.png',
+              width: 120,
+              height: 120,
             ),
             const SizedBox(height: 16),
             Text(

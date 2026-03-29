@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+18
+version: 1.0.0+19
 
 environment:
   sdk: '>=3.4.4 <4.0.0'
@@ -56,6 +56,10 @@ dependencies:
   flutter_local_notifications: ^17.0.0
   open_file: ^3.3.2
   path_provider: ^2.1.4
+  gal: ^1.1.0              # 갤러리 저장 (이미지/영상)
+  flutter_jailbreak_detection: ^1.7.0  # 루팅/탈옥 탐지
+  url_launcher: ^6.3.0                 # SNS 링크 열기
+  font_awesome_flutter: ^10.8.0        # 인스타그램/유튜브 브랜드 아이콘
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +71,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -81,9 +86,20 @@ flutter:
 
   assets:
     - assets/fonts/
+    - assets/images/
+    - assets/certs/
 
   fonts:
     - family: ZenSerif
       fonts:
         - asset: assets/fonts/ZEN-SERIF-TTF-Regular.ttf
         - asset: assets/fonts/ZEN-SERIF-Regular.otf
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo.png"
+  background_color: "#F5F5E8"
+  adaptive_icon_background: "#F5F5E8"
+  adaptive_icon_foreground: "assets/images/logo.png"
+  min_sdk_android: 21

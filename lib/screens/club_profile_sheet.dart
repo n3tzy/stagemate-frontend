@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
 import '../utils/file_validator.dart';
 
@@ -110,6 +112,8 @@ class _ClubProfileSheetState extends State<ClubProfileSheet> {
     final bannerUrl = profile['banner_url'] as String?;
     final name = profile['name'] as String? ?? '';
     final memberCount = profile['member_count'] as int? ?? 0;
+    final instagramUrl = profile['instagram_url'] as String?;
+    final youtubeUrl = profile['youtube_url'] as String?;
 
     return SafeArea(
       child: Column(
@@ -180,6 +184,31 @@ class _ClubProfileSheetState extends State<ClubProfileSheet> {
                   '멤버 $memberCount명',
                   style: TextStyle(color: colorScheme.outline),
                 ),
+                // SNS 링크 버튼
+                if (instagramUrl != null || youtubeUrl != null) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (instagramUrl != null)
+                        _SnsIconButton(
+                          icon: FontAwesomeIcons.instagram,
+                          color: const Color(0xFFE1306C),
+                          tooltip: 'Instagram',
+                          url: instagramUrl,
+                        ),
+                      if (instagramUrl != null && youtubeUrl != null)
+                        const SizedBox(width: 16),
+                      if (youtubeUrl != null)
+                        _SnsIconButton(
+                          icon: FontAwesomeIcons.youtube,
+                          color: const Color(0xFFFF0000),
+                          tooltip: 'YouTube',
+                          url: youtubeUrl,
+                        ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 24),
                 // 편집 버튼 (super_admin만)
                 if (widget.isOwner)
@@ -235,6 +264,8 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
   String? _logoUrl;
   String? _bannerUrl;
   String? _selectedColor;
+  late final TextEditingController _instagramCtrl;
+  late final TextEditingController _youtubeCtrl;
   bool _isSaving = false;
   bool _isUploadingLogo = false;
   bool _isUploadingBanner = false;
@@ -245,6 +276,19 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
     _logoUrl = widget.currentProfile['logo_url'] as String?;
     _bannerUrl = widget.currentProfile['banner_url'] as String?;
     _selectedColor = widget.currentProfile['theme_color'] as String?;
+    _instagramCtrl = TextEditingController(
+      text: widget.currentProfile['instagram_url'] as String? ?? '',
+    );
+    _youtubeCtrl = TextEditingController(
+      text: widget.currentProfile['youtube_url'] as String? ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _instagramCtrl.dispose();
+    _youtubeCtrl.dispose();
+    super.dispose();
   }
 
   Future<String?> _pickAndUpload(String field) async {
@@ -287,6 +331,14 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
       }
       if (_selectedColor != widget.currentProfile['theme_color']) {
         body['theme_color'] = _selectedColor;
+      }
+      final instaVal = _instagramCtrl.text.trim().isEmpty ? null : _instagramCtrl.text.trim();
+      if (instaVal != (widget.currentProfile['instagram_url'] as String?)) {
+        body['instagram_url'] = instaVal;
+      }
+      final ytVal = _youtubeCtrl.text.trim().isEmpty ? null : _youtubeCtrl.text.trim();
+      if (ytVal != (widget.currentProfile['youtube_url'] as String?)) {
+        body['youtube_url'] = ytVal;
       }
 
       if (body.isEmpty) {
@@ -411,6 +463,49 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
                 );
               }).toList(),
             ),
+            const SizedBox(height: 20),
+            // ── SNS 링크 ──────────────────────────────────
+            Row(
+              children: [
+                FaIcon(FontAwesomeIcons.instagram,
+                    size: 18, color: const Color(0xFFE1306C)),
+                const SizedBox(width: 8),
+                Text('Instagram',
+                    style: Theme.of(context).textTheme.labelLarge),
+              ],
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _instagramCtrl,
+              decoration: const InputDecoration(
+                hintText: 'https://www.instagram.com/계정명',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              keyboardType: TextInputType.url,
+              autocorrect: false,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                FaIcon(FontAwesomeIcons.youtube,
+                    size: 18, color: const Color(0xFFFF0000)),
+                const SizedBox(width: 8),
+                Text('YouTube',
+                    style: Theme.of(context).textTheme.labelLarge),
+              ],
+            ),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _youtubeCtrl,
+              decoration: const InputDecoration(
+                hintText: 'https://www.youtube.com/@채널명',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              keyboardType: TextInputType.url,
+              autocorrect: false,
+            ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _isSaving ? null : _save,
@@ -421,6 +516,49 @@ class _ClubProfileEditSheetState extends State<ClubProfileEditSheet> {
                   : const Text('저장'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── SNS 아이콘 버튼 ──────────────────────────────────
+class _SnsIconButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final String url;
+
+  const _SnsIconButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.url,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () async {
+          final uri = Uri.tryParse(url);
+          if (uri != null && await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        },
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withValues(alpha: 0.1),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Center(
+            child: FaIcon(icon, size: 22, color: color),
+          ),
         ),
       ),
     );
