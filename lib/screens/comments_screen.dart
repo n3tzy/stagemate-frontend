@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:open_file/open_file.dart';
 import '../api/api_client.dart';
 import 'feed_screen.dart' show FeedUserAvatar, FeedMediaThumbnail;
 
@@ -294,6 +297,45 @@ class _CommentsScreenState extends State<CommentsScreen> {
     }
   }
 
+  void _showEditPostDialog() {
+    final ctrl = TextEditingController(text: widget.post['content'] as String? ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('게시글 수정'),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 5,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+          FilledButton(
+            onPressed: () async {
+              final text = ctrl.text.trim();
+              if (text.isEmpty) return;
+              try {
+                await ApiClient.updatePost(widget.post['id'] as int, text);
+                if (mounted) {
+                  widget.post['content'] = text; // optimistic update
+                  setState(() {});
+                  Navigator.pop(ctx);
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('수정 실패: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('수정'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _toggleLike(dynamic comment) async {
     final commentId = comment['id'] as int;
     final wasLiked = comment['is_liked_by_me'] as bool? ?? false;
@@ -350,6 +392,25 @@ class _CommentsScreenState extends State<CommentsScreen> {
       bestComment['is_best'] = true;
     }
     setState(() {});
+  }
+
+  Future<void> _downloadMedia(BuildContext context, String url) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(const SnackBar(
+      content: Text('다운로드 중...'),
+      duration: Duration(seconds: 60),
+    ));
+    try {
+      final response = await http.get(Uri.parse(url));
+      final ext = url.split('.').last.split('?').first;
+      final file = File('${Directory.systemTemp.path}/media_${DateTime.now().millisecondsSinceEpoch}.$ext');
+      await file.writeAsBytes(response.bodyBytes);
+      messenger.hideCurrentSnackBar();
+      await OpenFile.open(file.path);
+    } catch (_) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(const SnackBar(content: Text('다운로드 실패')));
+    }
   }
 
   Widget _buildCommentTile(dynamic c, ColorScheme colorScheme) {
@@ -471,6 +532,19 @@ class _CommentsScreenState extends State<CommentsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_loading ? '댓글' : '댓글 ${_comments.length}개'),
+        actions: [
+          if (widget.post['author_id'] == widget.myUserId)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: _showEditPostDialog,
+              tooltip: '게시글 수정',
+            ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _load,
+            tooltip: '새로고침',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -529,10 +603,32 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                       itemCount: (post['media_urls'] as List).length,
                       separatorBuilder: (_, __) => const SizedBox(width: 6),
-                      itemBuilder: (_, i) => FeedMediaThumbnail(
-                        urls: (post['media_urls'] as List).cast<String>(),
-                        index: i,
-                      ),
+                      itemBuilder: (_, i) {
+                        final url = (post['media_urls'] as List).cast<String>()[i];
+                        return Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(url, height: 200, fit: BoxFit.cover),
+                            ),
+                            Positioned(
+                              right: 4,
+                              bottom: 4,
+                              child: GestureDetector(
+                                onTap: () => _downloadMedia(context, url),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Icon(Icons.download, color: Colors.white, size: 18),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 10),
