@@ -52,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _currentRole = widget.role;
     _currentClubName = widget.clubName;
     _currentClubId = 0; // _initClub()에서 비동기로 확정
+    _buildScreens();
     _initClub();
     WidgetsBinding.instance.addObserver(this);
     ApiClient.getAvatarUrl().then((url) {
@@ -63,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       onPostTap: (postId) => setState(() {
         _pendingPostId = postId;
         _currentIndex = 1; // Feed is always index 1 (see _screens getter — unconditional, position 1)
+        _buildScreens();
       }),
     );
   }
@@ -129,20 +131,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool get _canManageClub => _isSuperAdmin;
   bool get _canSubmitAudio => true;
 
-  // 역할에 따라 탭 화면 구성
-  List<Widget> get _screens {
-    return [
-      const NoticeScreen(),
+  // 역할에 따라 탭 화면 구성 (IndexedStack용 캐시 — 인스턴스 안정성 보장)
+  late List<Widget> _screenWidgets;
+
+  void _buildScreens() {
+    _screenWidgets = [
+      const NoticeScreen(key: ValueKey('notice')),
       FeedScreen(
+        key: const ValueKey('feed'),
         pendingPostId: _pendingPostId,
-        onPostIdConsumed: () => setState(() => _pendingPostId = null),
+        onPostIdConsumed: () => setState(() {
+          _pendingPostId = null;
+          _buildScreens();
+        }),
       ),
-      if (_canOptimizeSchedule) const ScheduleScreen(),
-      const GroupScreen(),
-      const BookingScreen(),
+      if (_canOptimizeSchedule) const ScheduleScreen(key: ValueKey('schedule')),
+      const GroupScreen(key: ValueKey('group')),
+      const BookingScreen(key: ValueKey('booking')),
       if (_canSubmitAudio)
-        AudioSubmissionScreen(role: _currentRole),
-      if (_canManageClub) const ClubManageScreen(),
+        AudioSubmissionScreen(key: const ValueKey('audio'), role: _currentRole),
+      if (_canManageClub) const ClubManageScreen(key: ValueKey('clubManage')),
     ];
   }
 
@@ -1018,6 +1026,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           setState(() {
                             _pendingPostId = postId;
                             _currentIndex = 1; // Feed is always index 1 (see _screens getter — unconditional, position 1)
+                            _buildScreens();
                           });
                         },
                       ),
@@ -1063,7 +1072,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ],
       ),
-      body: _screens[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screenWidgets,
+      ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
