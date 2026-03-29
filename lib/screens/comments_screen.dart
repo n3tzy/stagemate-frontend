@@ -26,6 +26,7 @@ class CommentsScreen extends StatefulWidget {
 }
 
 class _CommentsScreenState extends State<CommentsScreen> {
+  late Map<String, dynamic> _post;
   List<dynamic> _comments = [];
   bool _loading = true;
   bool _submitting = false;
@@ -38,6 +39,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
   @override
   void initState() {
     super.initState();
+    _post = Map<String, dynamic>.from(widget.post as Map);
     _load();
   }
 
@@ -163,18 +165,31 @@ class _CommentsScreenState extends State<CommentsScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final comments = await ApiClient.getPostComments(widget.post['id']);
-      setState(() => _comments = comments);
-      _scrollToBottom();
+      final results = await Future.wait([
+        ApiClient.getPost(_post['id'] as int),
+        ApiClient.getPostComments(_post['id'] as int),
+      ]);
+
+      final freshPost = results[0] as Map<String, dynamic>;
+      final comments = results[1] as List<dynamic>;
+
+      if (mounted) {
+        setState(() {
+          if (freshPost.containsKey('id')) {
+            _post = freshPost;
+          }
+          _comments = comments;
+          _loading = false;
+        });
+        _scrollToBottom();
+      }
     } catch (e) {
       if (mounted) {
-        setState(() => _comments = []);
+        setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('댓글을 불러오지 못했어요. ${friendlyError(e)}')),
+          SnackBar(content: Text('불러오기 실패: ${friendlyError(e)}')),
         );
       }
-    } finally {
-      setState(() => _loading = false);
     }
   }
 
@@ -184,7 +199,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     setState(() => _submitting = true);
     try {
       final parentId = _replyingTo?['id'] as int?;
-      await ApiClient.createPostComment(widget.post['id'], text, parentId: parentId);
+      await ApiClient.createPostComment(_post['id'], text, parentId: parentId);
       setState(() => _replyingTo = null);
       _ctrl.clear();
       await _load();
@@ -214,7 +229,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     );
     if (confirm != true) return;
     try {
-      await ApiClient.deletePostComment(widget.post['id'], commentId);
+      await ApiClient.deletePostComment(_post['id'], commentId);
       await _load();
       widget.onChanged();
     } catch (e) {
@@ -247,7 +262,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     );
     if (result != true) return;
     try {
-      await ApiClient.updatePostComment(widget.post['id'], comment['id'], ctrl.text.trim());
+      await ApiClient.updatePostComment(_post['id'], comment['id'], ctrl.text.trim());
       await _load();
       widget.onChanged();
     } catch (e) {
@@ -286,7 +301,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     );
     if (result == null) return;
     try {
-      await ApiClient.reportPostComment(widget.post['id'], commentId, result);
+      await ApiClient.reportPostComment(_post['id'], commentId, result);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('신고가 접수됐어요.'), backgroundColor: Colors.orange),
       );
@@ -298,7 +313,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
   }
 
   void _showEditPostDialog() {
-    final ctrl = TextEditingController(text: widget.post['content'] as String? ?? '');
+    final ctrl = TextEditingController(text: _post['content'] as String? ?? '');
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -315,9 +330,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
               final text = ctrl.text.trim();
               if (text.isEmpty) return;
               try {
-                await ApiClient.updatePost(widget.post['id'] as int, text);
+                await ApiClient.updatePost(_post['id'] as int, text);
                 if (mounted) {
-                  widget.post['content'] = text; // optimistic update
+                  _post['content'] = text; // optimistic update
                   setState(() {});
                   Navigator.pop(ctx);
                 }
@@ -350,7 +365,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
     try {
       final result = await ApiClient.toggleCommentLike(
-        widget.post['id'] as int,
+        _post['id'] as int,
         commentId,
       );
       if (mounted) {
@@ -527,13 +542,13 @@ class _CommentsScreenState extends State<CommentsScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final post = widget.post;
+    final post = _post;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_loading ? '댓글' : '댓글 ${_comments.length}개'),
         actions: [
-          if (widget.post['author_id'] == widget.myUserId)
+          if (_post['author_id'] == widget.myUserId)
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               onPressed: _showEditPostDialog,
