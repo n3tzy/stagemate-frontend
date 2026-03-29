@@ -218,6 +218,13 @@ class _GroupScreenState extends State<GroupScreen> {
               ),
               FilledButton(
                 onPressed: () async {
+                  if (_roomCodeController.text.trim().isEmpty) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('방 코드를 먼저 입력해 주세요')),
+                    );
+                    return;
+                  }
                   setState(() => _isSaving = true);
                   try {
                     final result = await ApiClient.saveAvailability(
@@ -413,7 +420,17 @@ class _GroupScreenState extends State<GroupScreen> {
 
             // ── 내 가능 시간 추가 버튼 ──
             FilledButton.icon(
-              onPressed: _isSaving ? null : _showAddSlotDialog,
+              onPressed: _isSaving
+                  ? null
+                  : () {
+                      if (_roomCodeController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('방 코드를 먼저 입력해 주세요')),
+                        );
+                        return;
+                      }
+                      _showAddSlotDialog();
+                    },
               icon: const Icon(Icons.add),
               label: Text('내 가능 시간 추가 ($_myDisplayName)'),
             ),
