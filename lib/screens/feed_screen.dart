@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -1282,7 +1283,11 @@ class _CommentsSheetState extends State<_CommentsSheet> {
               border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
             ),
             padding: EdgeInsets.fromLTRB(
-              16, 10, 16, 10 + MediaQuery.of(context).viewPadding.bottom,
+              16, 10, 16,
+              10 + math.max(
+                MediaQuery.of(context).viewInsets.bottom,
+                MediaQuery.of(context).viewPadding.bottom,
+              ),
             ),
             child: Row(
               children: [
