@@ -711,7 +711,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
             ),
             padding: EdgeInsets.fromLTRB(
               16, 8, 16,
-              8 + MediaQuery.of(context).viewPadding.bottom,
+              8 + (MediaQuery.of(context).viewInsets.bottom > 0
+                  ? 0
+                  : MediaQuery.of(context).viewPadding.bottom),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

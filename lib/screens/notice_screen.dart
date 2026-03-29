@@ -563,7 +563,10 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
               border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
             ),
             padding: EdgeInsets.fromLTRB(
-              16, 8, 16, 8 + MediaQuery.of(context).viewPadding.bottom,
+              16, 8, 16,
+              8 + (MediaQuery.of(context).viewInsets.bottom > 0
+                  ? 0
+                  : MediaQuery.of(context).viewPadding.bottom),
             ),
             child: Row(
               children: [
