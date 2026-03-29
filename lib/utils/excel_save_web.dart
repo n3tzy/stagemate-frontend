@@ -3,7 +3,7 @@ import 'dart:html' as html;
 
 /// 웹 전용: dart:html Blob으로 브라우저 자동 다운로드
 /// 반환값: null (브라우저가 다운로드를 처리하므로 경로 없음)
-String? saveExcelFile(List<int> bytes, String fileName) {
+Future<String?> saveExcelFile(List<int> bytes, String fileName) async {
   final blob = html.Blob(
     [bytes],
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

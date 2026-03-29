@@ -6,7 +6,7 @@ import 'excel_save_helper.dart'; // 플랫폼별 저장 구현체 자동 선택
 ///   - 웹: null (브라우저 자동 다운로드)
 ///   - 데스크탑/모바일: 저장된 파일 경로 (실패 시 null)
 class ExcelExporter {
-  static String? exportSchedule(Map<String, dynamic> result) {
+  static Future<String?> exportSchedule(Map<String, dynamic> result) async {
     final excel = Excel.createExcel();
     const sheetName = '무대순서';
 
@@ -109,7 +109,7 @@ class ExcelExporter {
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     final fileName = '무대순서_$dateStr.xlsx';
 
-    return saveExcelFile(bytes, fileName);
+    return await saveExcelFile(bytes, fileName);
   }
 
   static String _formatClock(double t) {

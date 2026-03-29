@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
 import 'club_profile_sheet.dart';
 import 'subscription_screen.dart';
@@ -14,6 +16,7 @@ class ClubManageScreen extends StatefulWidget {
 class _ClubManageScreenState extends State<ClubManageScreen> {
   int? _clubId;
   Map<String, dynamic>? _inviteInfo;
+  Map<String, dynamic>? _clubProfile;
   List<dynamic> _members = [];
   bool _isLoadingCode = false;
   bool _isLoadingMembers = false;
@@ -29,7 +32,15 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     final id = await ApiClient.getClubId();
     if (id == null) return;
     setState(() => _clubId = id);
-    await Future.wait([_loadInviteCode(), _loadMembers()]);
+    await Future.wait([_loadInviteCode(), _loadMembers(), _loadProfile()]);
+  }
+
+  Future<void> _loadProfile() async {
+    if (_clubId == null) return;
+    try {
+      final data = await ApiClient.getClubProfile(_clubId!);
+      if (mounted) setState(() => _clubProfile = data);
+    } catch (_) {}
   }
 
   Future<void> _loadInviteCode() async {
@@ -393,6 +404,35 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
                         ),
               ),
             ),
+            // ── SNS 바로가기 ─────────────────────────
+            if (_clubProfile != null &&
+                (_clubProfile!['instagram_url'] != null ||
+                 _clubProfile!['youtube_url'] != null))
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_clubProfile!['instagram_url'] != null)
+                      _SnsButton(
+                        icon: FontAwesomeIcons.instagram,
+                        color: const Color(0xFFE1306C),
+                        tooltip: 'Instagram',
+                        url: _clubProfile!['instagram_url'],
+                      ),
+                    if (_clubProfile!['instagram_url'] != null &&
+                        _clubProfile!['youtube_url'] != null)
+                      const SizedBox(width: 16),
+                    if (_clubProfile!['youtube_url'] != null)
+                      _SnsButton(
+                        icon: FontAwesomeIcons.youtube,
+                        color: const Color(0xFFFF0000),
+                        tooltip: 'YouTube',
+                        url: _clubProfile!['youtube_url'],
+                      ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 8),
             // ── 구독 / 플랜 카드 ─────────────────────────
             if (_myRole == 'super_admin')
@@ -635,6 +675,44 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
                 );
               })),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SnsButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final String? url;
+
+  const _SnsButton({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.url,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: url == null
+            ? null
+            : () => launchUrl(Uri.parse(url!), mode: LaunchMode.externalApplication),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withOpacity(0.12),
+          ),
+          child: Center(
+            child: FaIcon(icon, color: color, size: 22),
+          ),
         ),
       ),
     );

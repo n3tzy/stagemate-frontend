@@ -484,7 +484,7 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
               controller: _nameController,
               decoration: const InputDecoration(
                 labelText: '동아리 이름',
-                hintText: '예: 한양대 댄스동아리 GROOVE',
+                hintText: '예: OO학교 GROOVE, 직장인밴드 소울트리',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.group),
               ),

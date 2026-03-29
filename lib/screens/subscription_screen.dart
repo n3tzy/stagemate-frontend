@@ -51,13 +51,22 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
     try {
       final sub = await ApiClient.getClubSubscription(widget.clubId);
       final available = await InAppPurchase.instance.isAvailable();
+      debugPrint('▶▶▶ IAP available: $available');
       if (available) {
         final resp = await InAppPurchase.instance
             .queryProductDetails({_kStandardId, _kProId});
+        debugPrint('▶▶▶ IAP products loaded: ${resp.productDetails.length}');
+        debugPrint('▶▶▶ IAP not found IDs: ${resp.notFoundIDs}');
+        for (final p in resp.productDetails) {
+          debugPrint('▶▶▶ IAP product: ${p.id} - ${p.price}');
+        }
         if (mounted) setState(() => _products = resp.productDetails);
+      } else {
+        debugPrint('▶▶▶ IAP not available on this device');
       }
       loadedSub = sub;
     } catch (e) {
+      debugPrint('▶▶▶ IAP load error: $e');
       if (mounted) setState(() => _error = friendlyError(e));
     } finally {
       if (mounted) setState(() {
@@ -68,6 +77,17 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
   }
 
   Future<void> _purchase(String productId) async {
+    if (_products.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('스토어에서 상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
     final product = _products.firstWhere(
       (p) => p.id == productId,
       orElse: () => throw Exception('상품을 찾을 수 없습니다.'),
@@ -77,9 +97,10 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
       final param = PurchaseParam(productDetails: product);
       await InAppPurchase.instance.buyNonConsumable(purchaseParam: param);
     } catch (e) {
+      debugPrint('▶▶▶ IAP purchase error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+          SnackBar(content: Text('[디버그] $e'), backgroundColor: Colors.red),
         );
         setState(() => _purchasing = false);
       }

@@ -565,8 +565,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   ),
                   // 엑셀 다운로드 버튼
                   OutlinedButton.icon(
-                    onPressed: () {
-                      final path = ExcelExporter.exportSchedule(_result!);
+                    onPressed: () async {
+                      final path = await ExcelExporter.exportSchedule(_result!);
                       if (path != null && mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

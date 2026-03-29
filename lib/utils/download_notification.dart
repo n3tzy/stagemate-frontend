@@ -8,7 +8,11 @@ bool _initialized = false;
 Future<void> initDownloadNotifications() async {
   if (_initialized) return;
   const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-  const iosSettings = DarwinInitializationSettings();
+  const iosSettings = DarwinInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: false,
+    requestSoundPermission: false,
+  );
   const settings = InitializationSettings(
     android: androidSettings,
     iOS: iosSettings,
@@ -29,13 +33,15 @@ Future<void> showDownloadNotification({
   required String filePath,
   required String fileName,
 }) async {
-  if (!Platform.isAndroid) return; // iOS는 no-op
+  if (!Platform.isAndroid && !Platform.isIOS) return;
   await initDownloadNotifications();
 
-  // Android 13+ 런타임 권한 요청
-  final android = _plugin.resolvePlatformSpecificImplementation<
-      AndroidFlutterLocalNotificationsPlugin>();
-  await android?.requestNotificationsPermission();
+  if (Platform.isAndroid) {
+    // Android 13+ 런타임 권한 요청
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await android?.requestNotificationsPermission();
+  }
 
   const androidDetails = AndroidNotificationDetails(
     'downloads',
@@ -45,7 +51,14 @@ Future<void> showDownloadNotification({
     priority: Priority.high,
     icon: '@mipmap/ic_launcher',
   );
-  const details = NotificationDetails(android: androidDetails);
+  const iosDetails = DarwinNotificationDetails(
+    presentAlert: true,
+    presentSound: false,
+  );
+  const details = NotificationDetails(
+    android: androidDetails,
+    iOS: iosDetails,
+  );
 
   await _plugin.show(
     0,
