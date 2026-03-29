@@ -38,6 +38,7 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         useMaterial3: true,
+        fontFamily: 'ZenSerif',
       ),
       builder: (context, child) {
         final width = MediaQuery.of(context).size.width;
