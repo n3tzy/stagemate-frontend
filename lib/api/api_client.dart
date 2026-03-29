@@ -296,7 +296,7 @@ class ApiClient {
   }
 
   static Future<Map<String, dynamic>> getPost(int postId) async {
-    final headers = await _authOnlyHeaders();
+    final headers = await _headers();
     final response = await http.get(
       Uri.parse('$baseUrl/posts/$postId'),
       headers: headers,
