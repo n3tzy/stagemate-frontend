@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/billing_client_wrappers.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
 
 class ClubSubscriptionScreen extends StatefulWidget {
@@ -23,6 +27,8 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
   List<ProductDetails> _products = [];
   late StreamSubscription<List<PurchaseDetails>> _purchaseSub;
   bool _purchasing = false;
+  bool _restoring = false;
+  PurchaseDetails? _oldPurchase; // 기존 활성 구독 (플랜 변경 시 참조)
 
   @override
   void initState() {
@@ -64,6 +70,10 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
       } else {
         debugPrint('▶▶▶ IAP not available on this device');
       }
+      // 기존 구독 복원 (플랜 변경 시 필요)
+      if (available) {
+        await InAppPurchase.instance.restorePurchases();
+      }
       loadedSub = sub;
     } catch (e) {
       debugPrint('▶▶▶ IAP load error: $e');
@@ -94,7 +104,22 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
     );
     setState(() => _purchasing = true);
     try {
-      final param = PurchaseParam(productDetails: product);
+      PurchaseParam param;
+
+      // Android에서 기존 구독이 있으면 플랜 변경 (ChangeSubscriptionParam)
+      if (Platform.isAndroid && _oldPurchase != null) {
+        param = GooglePlayPurchaseParam(
+          productDetails: product,
+          changeSubscriptionParam: ChangeSubscriptionParam(
+            oldPurchaseDetails: _oldPurchase as GooglePlayPurchaseDetails,
+            replacementMode: ReplacementMode.withTimeProration,
+          ),
+        );
+      } else {
+        // iOS는 Apple이 같은 Subscription Group 내 변경을 자동 처리
+        param = PurchaseParam(productDetails: product);
+      }
+
       await InAppPurchase.instance.buyNonConsumable(purchaseParam: param);
     } catch (e) {
       debugPrint('▶▶▶ IAP purchase error: $e');
@@ -110,8 +135,18 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
   Future<void> _onPurchaseUpdate(List<PurchaseDetails> purchases) async {
     for (final purchase in purchases) {
       bool completed = false;
-      if (purchase.status == PurchaseStatus.purchased ||
-          purchase.status == PurchaseStatus.restored) {
+
+      if (purchase.status == PurchaseStatus.restored) {
+        // 기존 활성 구독 저장 (플랜 변경 시 참조)
+        debugPrint('▶▶▶ IAP restored: ${purchase.productID}');
+        setState(() => _oldPurchase = purchase);
+        if (purchase.pendingCompletePurchase) {
+          await InAppPurchase.instance.completePurchase(purchase);
+        }
+        continue;
+      }
+
+      if (purchase.status == PurchaseStatus.purchased) {
         try {
           final platform = defaultTargetPlatform == TargetPlatform.iOS
               ? 'apple'
@@ -125,6 +160,8 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
           );
           await InAppPurchase.instance.completePurchase(purchase);
           completed = true;
+          // 새 구독을 oldPurchase로 업데이트
+          setState(() => _oldPurchase = purchase);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -325,9 +362,53 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
               const Center(child: Text('결제 처리 중...', style: TextStyle(fontSize: 12))),
             ],
             const SizedBox(height: 24),
+            // ── 구독 관리 / 복원 버튼 ─────────────────
+            if (currentPlan != 'free')
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    final url = Platform.isIOS
+                        ? 'https://apps.apple.com/account/subscriptions'
+                        : 'https://play.google.com/store/account/subscriptions';
+                    launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                  },
+                  icon: const Icon(Icons.settings_outlined, size: 16),
+                  label: const Text('구독 관리 (취소·변경)'),
+                ),
+              ),
+            Center(
+              child: TextButton.icon(
+                onPressed: _restoring
+                    ? null
+                    : () async {
+                        setState(() => _restoring = true);
+                        try {
+                          await InAppPurchase.instance.restorePurchases();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('구독 복원을 요청했습니다.')),
+                            );
+                            await _load();
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('복원 실패: ${friendlyError(e)}'), backgroundColor: Colors.red),
+                            );
+                          }
+                        } finally {
+                          if (mounted) setState(() => _restoring = false);
+                        }
+                      },
+                icon: const Icon(Icons.restore, size: 16),
+                label: Text(_restoring ? '복원 중...' : '구독 복원'),
+              ),
+            ),
+            const SizedBox(height: 12),
             Text(
               '* 구독은 App Store / Google Play를 통해 결제됩니다.\n'
-              '* 구독은 다음 결제일 전에 취소하지 않으면 자동 갱신됩니다.',
+              '* 구독은 다음 결제일 전에 취소하지 않으면 자동 갱신됩니다.\n'
+              '* 구독 취소는 위 "구독 관리"에서 가능합니다.',
               style: TextStyle(
                 fontSize: 11,
                 color: Theme.of(context).colorScheme.outline,
