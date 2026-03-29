@@ -518,6 +518,33 @@ class _AdminSubmissionSheetState extends State<_AdminSubmissionSheet> {
             ),
           ),
           const Divider(height: 24),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pop(context); // Close admin sheet first
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+                  builder: (_) => _TeamLeaderSubmitSheet(
+                    clubId: widget.clubId,
+                    perf: widget.perf,
+                    onChanged: widget.onChanged,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.upload_file, size: 18),
+              label: const Text('내 팀 음원 제출'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+              ),
+            ),
+          ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
