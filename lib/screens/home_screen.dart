@@ -355,6 +355,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 },
               ),
             ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.group_add_outlined),
+                  title: const Text('동아리 생성 & 가입'),
+                  onTap: () {
+                    Navigator.pop(context); // Close the sheet first
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ClubOnboardingScreen(isPostLogin: true),
+                      ),
+                    );
+                  },
+                ),
             ListTile(
               leading: const Icon(Icons.lock_reset),
               title: const Text('비밀번호 변경'),
@@ -960,17 +974,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ),
                     )
                   else
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      iconSize: 16,
-                      padding: EdgeInsets.zero,
-                      color: colorScheme.onPrimaryContainer,
-                      tooltip: '동아리 추가',
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ClubOnboardingScreen(isPostLogin: true),
-                        ),
+                    Text(
+                      _currentClubName,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onPrimaryContainer.withOpacity(0.7),
                       ),
                     ),
                 ],
