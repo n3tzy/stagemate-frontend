@@ -28,6 +28,78 @@ class _MyActivityScreenState extends State<MyActivityScreen>
     super.dispose();
   }
 
+  Future<void> _deletePost(int postId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('게시글 삭제'),
+        content: const Text('삭제하시겠어요? 이 작업은 되돌릴 수 없어요.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ApiClient.deletePost(postId);
+      setState(() => _posts.removeWhere((p) => p['id'] == postId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('삭제됐어요.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyError(e))),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteComment(int postId, int commentId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('댓글 삭제'),
+        content: const Text('삭제하시겠어요? 이 작업은 되돌릴 수 없어요.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ApiClient.deletePostComment(postId, commentId);
+      setState(() => _comments.removeWhere((c) => c['id'] == commentId));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('삭제됐어요.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyError(e))),
+        );
+      }
+    }
+  }
+
   Future<void> _load() async {
     setState(() => _isLoading = true);
     try {
@@ -113,6 +185,11 @@ class _MyActivityScreenState extends State<MyActivityScreen>
                                     Text('${p['comment_count'] ?? 0}', style: const TextStyle(fontSize: 12)),
                                   ],
                                 ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                  onPressed: () => _deletePost((p['id'] as num).toInt()),
+                                  tooltip: '삭제',
+                                ),
                               ),
                             );
                           },
@@ -167,6 +244,14 @@ class _MyActivityScreenState extends State<MyActivityScreen>
                                   ],
                                 ),
                                 isThreeLine: true,
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                  onPressed: () => _deleteComment(
+                                    (c['post_id'] as num).toInt(),
+                                    (c['id'] as num).toInt(),
+                                  ),
+                                  tooltip: '삭제',
+                                ),
                               ),
                             );
                           },
