@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import '../api/api_client.dart';
 import 'home_screen.dart';
 
@@ -352,15 +355,51 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
   int _step = 1;
 
   // Step 2 state
-  Map<String, dynamic>? _createdClub;   // API response from createClub
-  final _logoUrlController = TextEditingController();
+  Map<String, dynamic>? _createdClub;
+  XFile? _logoFile;
   bool _isSavingLogo = false;
 
   @override
   void dispose() {
     _nameController.dispose();
-    _logoUrlController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickLogo() async {
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+    if (file != null && mounted) {
+      setState(() => _logoFile = file);
+    }
+  }
+
+  Future<String?> _uploadLogo(int clubId) async {
+    if (_logoFile == null) return null;
+    try {
+      final bytes = await File(_logoFile!.path).readAsBytes();
+      final ext = _logoFile!.path.contains('.')
+          ? '.${_logoFile!.path.split('.').last.toLowerCase()}'
+          : '.jpg';
+      final contentType = ext == '.png' ? 'image/png' : 'image/jpeg';
+      final fileSizeMb = (bytes.length / (1024 * 1024)).ceil().clamp(1, 999);
+      final presigned = await ApiClient.getPresignedUrl(
+        'logo$ext', contentType,
+        clubId: clubId, fileSizeMb: fileSizeMb,
+      );
+      final uploadUrl = presigned['upload_url'] as String;
+      final publicUrl = presigned['public_url'] as String;
+      final resp = await http.put(
+        Uri.parse(uploadUrl),
+        headers: {'Content-Type': contentType},
+        body: bytes,
+      );
+      if (resp.statusCode == 200 || resp.statusCode == 204) return publicUrl;
+    } catch (_) {}
+    return null;
   }
 
   Future<void> _createClub() async {
@@ -369,6 +408,16 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
 
     setState(() => _isLoading = true);
     try {
+      // 이미 동아리가 만들어진 경우(뒤로 왔을 때) 이름만 업데이트
+      if (_createdClub != null) {
+        await ApiClient.updateClubProfile(_createdClub!['club_id'], {'club_name': name});
+        setState(() {
+          _createdClub = {..._createdClub!, 'club_name': name};
+          _step = 2;
+        });
+        return;
+      }
+
       final data = await ApiClient.createClub(name);
       if (!mounted) return;
 
@@ -399,19 +448,19 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
   Future<void> _finishOnboarding({bool saveLogo = false}) async {
     if (_createdClub == null) return;
 
-    if (saveLogo) {
-      final logoUrl = _logoUrlController.text.trim();
-      if (logoUrl.isNotEmpty) {
-        setState(() => _isSavingLogo = true);
-        try {
+    if (saveLogo && _logoFile != null) {
+      setState(() => _isSavingLogo = true);
+      try {
+        final logoUrl = await _uploadLogo(_createdClub!['club_id']);
+        if (logoUrl != null) {
           await ApiClient.updateClubProfile(_createdClub!['club_id'], {
             'logo_url': logoUrl,
           });
-        } catch (_) {
-          // 로고 저장 실패 시 무시하고 진행
-        } finally {
-          if (mounted) setState(() => _isSavingLogo = false);
         }
+      } catch (_) {
+        // 로고 저장 실패 시 무시하고 진행
+      } finally {
+        if (mounted) setState(() => _isSavingLogo = false);
       }
     }
 
@@ -484,7 +533,7 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
               controller: _nameController,
               decoration: const InputDecoration(
                 labelText: '동아리 이름',
-                hintText: '예: OO학교 GROOVE, 직장인밴드 소울트리',
+                hintText: '예: 댄스팀 GROOVE, 직장인밴드 소울트리, 청소년합창단',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.group),
               ),
@@ -551,7 +600,10 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('동아리 만들기'),
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: (_isSavingLogo) ? null : () => setState(() => _step = 1),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
@@ -596,34 +648,66 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '로고 URL을 추가해서 동아리를 꾸며보세요 (선택)',
+              '로고 사진을 추가해서 동아리를 꾸며보세요 (선택)',
               style: TextStyle(color: colorScheme.outline),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            TextField(
-              controller: _logoUrlController,
-              decoration: const InputDecoration(
-                labelText: '로고 이미지 URL (선택)',
-                hintText: 'https://example.com/logo.png',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.image_outlined),
+            const SizedBox(height: 28),
+            // 로고 이미지 피커
+            Center(
+              child: GestureDetector(
+                onTap: _isSavingLogo ? null : _pickLogo,
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 56,
+                      backgroundColor: colorScheme.surfaceContainerHighest,
+                      backgroundImage: _logoFile != null
+                          ? FileImage(File(_logoFile!.path))
+                          : null,
+                      child: _logoFile == null
+                          ? Icon(Icons.add_a_photo_outlined,
+                              size: 36, color: colorScheme.outline)
+                          : null,
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.edit, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              keyboardType: TextInputType.url,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 10),
+            Text(
+              _logoFile != null ? '로고가 선택됐어요 ✓' : '탭해서 사진첩에서 선택',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: _logoFile != null ? Colors.green : colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 28),
             FilledButton.icon(
               onPressed: (_isLoading || _isSavingLogo)
                   ? null
                   : () => _finishOnboarding(saveLogo: true),
-              icon: (_isSavingLogo)
+              icon: _isSavingLogo
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.check),
-              label: Text(_isSavingLogo ? '저장 중...' : '완료'),
+              label: Text(_isSavingLogo ? '업로드 중...' : '완료'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
