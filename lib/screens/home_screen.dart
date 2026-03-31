@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -389,6 +390,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 _showChangePasswordDialog();
               },
             ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('개인정보처리방침'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                launchUrl(
+                  Uri.parse('https://skillful-unity-production-e922.up.railway.app/privacy'),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: const Text('이용약관'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                launchUrl(
+                  Uri.parse('https://skillful-unity-production-e922.up.railway.app/terms'),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+            ),
+            const Divider(height: 1),
             ListTile(
               leading: Icon(Icons.person_remove, color: Theme.of(context).colorScheme.error),
               title: Text('회원 탈퇴', style: TextStyle(color: Theme.of(context).colorScheme.error)),

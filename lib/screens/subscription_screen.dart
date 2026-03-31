@@ -293,6 +293,36 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            // ── 구독 복원 버튼 (Apple 심사 요구: 항상 노출) ─────────────
+            OutlinedButton.icon(
+              onPressed: _restoring
+                  ? null
+                  : () async {
+                      setState(() => _restoring = true);
+                      try {
+                        await InAppPurchase.instance.restorePurchases();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('구독 복원을 요청했습니다.')),
+                          );
+                          await _load();
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('복원 실패: ${friendlyError(e)}'), backgroundColor: Colors.red),
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _restoring = false);
+                      }
+                    },
+              icon: _restoring
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.restore, size: 18),
+              label: Text(_restoring ? '복원 중...' : '이전 구독 복원 (Restore Purchases)'),
+            ),
             const SizedBox(height: 20),
             const Text(
               '플랜 선택',
@@ -351,7 +381,7 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
               const Center(child: Text('결제 처리 중...', style: TextStyle(fontSize: 12))),
             ],
             const SizedBox(height: 24),
-            // ── 구독 관리 / 복원 버튼 ─────────────────
+            // ── 구독 관리 버튼 ─────────────────
             if (currentPlan != 'free')
               Center(
                 child: TextButton.icon(
@@ -365,42 +395,23 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
                   label: const Text('구독 관리 (취소·변경)'),
                 ),
               ),
-            Center(
-              child: TextButton.icon(
-                onPressed: _restoring
-                    ? null
-                    : () async {
-                        setState(() => _restoring = true);
-                        try {
-                          await InAppPurchase.instance.restorePurchases();
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('구독 복원을 요청했습니다.')),
-                            );
-                            await _load();
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('복원 실패: ${friendlyError(e)}'), backgroundColor: Colors.red),
-                            );
-                          }
-                        } finally {
-                          if (mounted) setState(() => _restoring = false);
-                        }
-                      },
-                icon: const Icon(Icons.restore, size: 16),
-                label: Text(_restoring ? '복원 중...' : '구독 복원'),
-              ),
-            ),
             const SizedBox(height: 12),
-            Text(
-              '* 구독은 App Store / Google Play를 통해 결제됩니다.\n'
-              '* 구독은 다음 결제일 전에 취소하지 않으면 자동 갱신됩니다.\n'
-              '* 구독 취소는 위 "구독 관리"에서 가능합니다.',
-              style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(context).colorScheme.outline,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '• 구독은 App Store / Google Play를 통해 결제됩니다.\n'
+                '• 구독 기간 만료 24시간 전까지 취소하지 않으면 자동 갱신됩니다.\n'
+                '• 구독 취소·변경은 위 "구독 관리" 버튼을 이용하세요.\n'
+                '• 기기를 변경했거나 구독이 반영되지 않을 경우 위 "이전 구독 복원" 버튼을 누르세요.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  height: 1.6,
+                ),
               ),
             ),
           ],
