@@ -979,66 +979,57 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
               ],
             ),
-            // 2줄: 동아리명 (스위칭 가능하면 탭 가능)
-            if (widget.clubs.length >= 2)
-              GestureDetector(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            // 2줄: 동아리명 (항상 탭 가능 — 1개여도 스위처 열어서 추가 가능)
+            GestureDetector(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+                  builder: (_) => _ClubSwitcherSheet(
+                    clubs: widget.clubs,
+                    currentClubId: _currentClubId,
+                    onSelect: (club) async {
+                      await ApiClient.setClubInfo(
+                        (club['club_id'] as num).toInt(),
+                        club['club_name'] as String,
+                        club['role'] as String,
+                      );
+                      setState(() {
+                        _currentClubId = (club['club_id'] as num).toInt();
+                        _currentClubName = club['club_name'] as String;
+                        _currentRole = club['role'] as String;
+                        _buildScreens();
+                      });
+                    },
+                    onAddClub: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ClubOnboardingScreen(isPostLogin: true),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.swap_horiz, size: 13, color: colorScheme.primary),
+                  const SizedBox(width: 3),
+                  Text(
+                    '$_currentClubName · ${_roleLabel(_currentRole)}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colorScheme.onPrimaryContainer.withOpacity(0.85),
                     ),
-                    builder: (_) => _ClubSwitcherSheet(
-                      clubs: widget.clubs,
-                      currentClubId: _currentClubId,
-                      onSelect: (club) async {
-                        await ApiClient.setClubInfo(
-                          (club['club_id'] as num).toInt(),
-                          club['club_name'] as String,
-                          club['role'] as String,
-                        );
-                        setState(() {
-                          _currentClubId = (club['club_id'] as num).toInt();
-                          _currentClubName = club['club_name'] as String;
-                          _currentRole = club['role'] as String;
-                          _buildScreens();
-                        });
-                      },
-                      onAddClub: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ClubOnboardingScreen(isPostLogin: true),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.swap_horiz, size: 13, color: colorScheme.primary),
-                    const SizedBox(width: 3),
-                    Text(
-                      '$_currentClubName · ${_roleLabel(_currentRole)}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colorScheme.onPrimaryContainer.withOpacity(0.85),
-                      ),
-                    ),
-                    Icon(Icons.expand_more, size: 13, color: colorScheme.primary),
-                  ],
-                ),
-              )
-            else
-              Text(
-                '$_currentClubName · ${_roleLabel(_currentRole)}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: colorScheme.onPrimaryContainer.withOpacity(0.7),
-                ),
+                  ),
+                  Icon(Icons.expand_more, size: 13, color: colorScheme.primary),
+                ],
               ),
+            ),
           ],
         ),
         actions: [
