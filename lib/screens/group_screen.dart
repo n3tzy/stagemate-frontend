@@ -243,7 +243,7 @@ class _GroupScreenState extends State<GroupScreen> {
                     Navigator.pop(dialogContext);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('저장됐습니다!'),
+                        content: Text('저장되었습니다!'),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -297,7 +297,7 @@ class _GroupScreenState extends State<GroupScreen> {
       try {
         await ApiClient.deleteAvailability(slotId);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('삭제됐습니다.')),
+          const SnackBar(content: Text('삭제되었습니다.')),
         );
         await _loadAvailability();
       } catch (e) {

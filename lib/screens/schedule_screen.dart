@@ -570,7 +570,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       if (path != null && mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('저장됐어요: ${path.split(Platform.pathSeparator).last}'),
+                            content: Text('저장되었어요: ${path.split(Platform.pathSeparator).last}'),
                             duration: const Duration(seconds: 4),
                             behavior: SnackBarBehavior.floating,
                           ),

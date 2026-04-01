@@ -313,7 +313,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('✅ 예약이 완료됐습니다!'),
+                        content: Text('✅ 예약이 완료되었습니다!'),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -371,7 +371,7 @@ class _BookingScreenState extends State<BookingScreen> {
         await ApiClient.deleteBooking(id);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('예약이 취소됐습니다.')),
+            const SnackBar(content: Text('예약이 취소되었습니다.')),
           );
         }
         await _loadBookings();

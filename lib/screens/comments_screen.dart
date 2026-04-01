@@ -303,7 +303,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     try {
       await ApiClient.reportPostComment(_post['id'], commentId, result);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('신고가 접수됐어요.'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('신고가 접수되었어요.'), backgroundColor: Colors.orange),
       );
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -431,7 +431,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
       }
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(const SnackBar(
-        content: Text('갤러리에 저장됐습니다!'),
+        content: Text('갤러리에 저장되었습니다!'),
         backgroundColor: Colors.green,
       ));
     } catch (_) {

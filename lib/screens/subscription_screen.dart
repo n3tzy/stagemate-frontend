@@ -154,7 +154,7 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('구독이 활성화됐습니다! 🎉'),
+                content: Text('구독이 활성화되었습니다! 🎉'),
                 backgroundColor: Colors.green,
               ),
             );

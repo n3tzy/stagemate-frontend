@@ -96,7 +96,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('초대 코드가 복사됐습니다.'),
+          content: Text('초대 코드가 복사되었습니다.'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 2),
         ),
@@ -151,7 +151,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
       await ApiClient.updateMemberRole(_clubId!, member['user_id'], result);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${member['display_name']} 역할이 ${_roleKo(result)}(으)로 변경됐습니다.'),
+          content: Text('${member['display_name']} 역할이 ${_roleKo(result)}(으)로 변경되었습니다.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -219,7 +219,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (sentToEmail) ...[
-                Text('${member['display_name']}님에게 임시 비밀번호가 이메일로 발송됐습니다.'),
+                Text('${member['display_name']}님에게 임시 비밀번호가 이메일로 발송되었습니다.'),
                 const SizedBox(height: 8),
                 const Text(
                   '멤버가 이메일을 확인한 후 로그인하도록 안내해 주세요.',
@@ -263,7 +263,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
                   Clipboard.setData(ClipboardData(text: tempPwd));
                   ScaffoldMessenger.of(ctx).showSnackBar(
                     const SnackBar(
-                      content: Text('임시 비밀번호가 복사됐습니다.'),
+                      content: Text('임시 비밀번호가 복사되었습니다.'),
                       backgroundColor: Colors.green,
                       duration: Duration(seconds: 2),
                     ),

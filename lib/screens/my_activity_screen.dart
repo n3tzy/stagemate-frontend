@@ -52,7 +52,7 @@ class _MyActivityScreenState extends State<MyActivityScreen>
       setState(() => _posts.removeWhere((p) => p['id'] == postId));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('삭제됐어요.')),
+          const SnackBar(content: Text('삭제되었어요.')),
         );
       }
     } catch (e) {
@@ -88,7 +88,7 @@ class _MyActivityScreenState extends State<MyActivityScreen>
       setState(() => _comments.removeWhere((c) => c['id'] == commentId));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('삭제됐어요.')),
+          const SnackBar(content: Text('삭제되었어요.')),
         );
       }
     } catch (e) {

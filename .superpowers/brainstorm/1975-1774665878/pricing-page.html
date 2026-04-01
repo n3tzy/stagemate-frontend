@@ -1,0 +1,115 @@
+<h2>요금제 페이지 — 사용자에게 보이는 화면 미리보기</h2>
+<p class="subtitle">실제 앱 내 구독 화면 목업입니다. 클릭해서 선택해주세요.</p>
+
+<div class="options">
+  <div class="option" data-choice="this" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>카드 3열 나란히</h3>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">StageMate 구독</div>
+        <div class="mockup-body" style="padding:16px">
+          <p style="text-align:center;font-size:13px;color:#555;margin-bottom:16px">동아리를 더 돋보이게 만들어보세요</p>
+          <div style="display:flex;gap:8px;align-items:stretch">
+
+            <!-- FREE -->
+            <div style="flex:1;border:1px solid #e0e0e0;border-radius:12px;padding:12px;text-align:center">
+              <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:1px;margin-bottom:6px">FREE</div>
+              <div style="font-size:20px;font-weight:800;color:#1C1B1F">₩0</div>
+              <div style="font-size:10px;color:#888;margin-bottom:10px">/월</div>
+              <div style="border-top:1px solid #f0f0f0;padding-top:10px;font-size:11px;color:#555;line-height:2">
+                <div>저장공간 10GB</div>
+                <div>1GB↑ 영상 월 5개</div>
+                <div style="color:#bbb">— 동아리 꾸미기</div>
+                <div style="color:#bbb">— 홍보 부스트</div>
+                <div style="color:#bbb">— 랭킹 노출</div>
+              </div>
+              <button class="mock-button" style="margin-top:12px;font-size:11px;background:#f5f5f5;color:#555;border:none;padding:6px 14px;border-radius:8px;width:100%">현재 플랜</button>
+            </div>
+
+            <!-- STANDARD -->
+            <div style="flex:1;border:1px solid #6750A4;border-radius:12px;padding:12px;text-align:center">
+              <div style="font-size:10px;font-weight:700;color:#6750A4;letter-spacing:1px;margin-bottom:6px">STANDARD</div>
+              <div style="font-size:20px;font-weight:800;color:#1C1B1F">₩1,900</div>
+              <div style="font-size:10px;color:#888;margin-bottom:10px">/월</div>
+              <div style="border-top:1px solid #f0f0f0;padding-top:10px;font-size:11px;color:#555;line-height:2">
+                <div>저장공간 30GB</div>
+                <div>1GB↑ 영상 무제한</div>
+                <div style="color:#6750A4;font-weight:600">✦ 동아리 꾸미기</div>
+                <div style="color:#6750A4;font-weight:600">홍보 부스트 월 1회</div>
+                <div style="color:#bbb">— 랭킹 우선 노출</div>
+              </div>
+              <button class="mock-button" style="margin-top:12px;font-size:11px;background:#6750A4;color:white;border:none;padding:6px 14px;border-radius:8px;width:100%">구독하기</button>
+            </div>
+
+            <!-- PRO -->
+            <div style="flex:1;border:2px solid #6750A4;border-radius:12px;padding:12px;text-align:center;background:linear-gradient(160deg,#f3f0ff,#ede7f6);position:relative">
+              <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#6750A4;color:white;font-size:10px;font-weight:700;padding:2px 10px;border-radius:10px;white-space:nowrap">추천</div>
+              <div style="font-size:10px;font-weight:700;color:#6750A4;letter-spacing:1px;margin-bottom:6px">PRO ✦</div>
+              <div style="font-size:20px;font-weight:800;color:#1C1B1F">₩4,900</div>
+              <div style="font-size:10px;color:#888;margin-bottom:10px">/월</div>
+              <div style="border-top:1px solid #d8d0f0;padding-top:10px;font-size:11px;color:#444;line-height:2">
+                <div>저장공간 100GB</div>
+                <div>1GB↑ 영상 무제한</div>
+                <div style="color:#6750A4;font-weight:600">✦ 동아리 꾸미기</div>
+                <div style="color:#6750A4;font-weight:600">홍보 부스트 월 3회</div>
+                <div style="color:#6750A4;font-weight:600">랭킹 우선 노출</div>
+              </div>
+              <button class="mock-button" style="margin-top:12px;font-size:11px;background:#6750A4;color:white;border:none;padding:6px 14px;border-radius:8px;width:100%;font-weight:700">구독하기</button>
+            </div>
+
+          </div>
+          <p style="text-align:center;font-size:10px;color:#aaa;margin-top:12px">인앱결제 · 언제든 해지 가능</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="vertical" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>세로 리스트 + 기능 비교표</h3>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">StageMate 구독</div>
+        <div class="mockup-body" style="padding:16px">
+
+          <!-- 플랜 선택 탭 -->
+          <div style="display:flex;gap:6px;margin-bottom:14px">
+            <div style="flex:1;text-align:center;padding:8px;border-radius:10px;background:#f0f0f0;font-size:12px;color:#888">FREE</div>
+            <div style="flex:1;text-align:center;padding:8px;border-radius:10px;border:1.5px solid #6750A4;font-size:12px;color:#6750A4;font-weight:600">STANDARD</div>
+            <div style="flex:1;text-align:center;padding:8px;border-radius:10px;background:#6750A4;font-size:12px;color:white;font-weight:700">PRO ✦</div>
+          </div>
+
+          <!-- 기능 비교 행 -->
+          <div style="font-size:12px">
+            <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:4px;padding:6px 0;border-bottom:1px solid #f0f0f0;color:#888;font-size:10px;font-weight:700">
+              <div>기능</div><div style="text-align:center">FREE</div><div style="text-align:center">STD</div><div style="text-align:center">PRO</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:4px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+              <div style="color:#444">저장공간</div><div style="text-align:center;color:#888">10GB</div><div style="text-align:center;color:#6750A4">30GB</div><div style="text-align:center;color:#6750A4;font-weight:700">100GB</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:4px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+              <div style="color:#444">대용량 영상</div><div style="text-align:center;color:#888">월 5개</div><div style="text-align:center;color:#6750A4">무제한</div><div style="text-align:center;color:#6750A4;font-weight:700">무제한</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:4px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+              <div style="color:#444">동아리 꾸미기</div><div style="text-align:center;color:#ccc">✕</div><div style="text-align:center;color:#6750A4">✓</div><div style="text-align:center;color:#6750A4;font-weight:700">✓</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:4px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+              <div style="color:#444">홍보 부스트</div><div style="text-align:center;color:#ccc">✕</div><div style="text-align:center;color:#6750A4">월 1회</div><div style="text-align:center;color:#6750A4;font-weight:700">월 3회</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:4px;padding:8px 0">
+              <div style="color:#444">랭킹 부스트</div><div style="text-align:center;color:#ccc">✕</div><div style="text-align:center;color:#ccc">✕</div><div style="text-align:center;color:#6750A4;font-weight:700">✓</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="mock-button" style="flex:1;font-size:12px;background:#ede7f6;color:#6750A4;border:none;padding:10px;border-radius:10px;font-weight:600">STANDARD ₩1,900</button>
+            <button class="mock-button" style="flex:1;font-size:12px;background:#6750A4;color:white;border:none;padding:10px;border-radius:10px;font-weight:700">PRO ₩4,900 ✦</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:16px">어느 레이아웃이 더 직관적으로 느껴지나요?</p>

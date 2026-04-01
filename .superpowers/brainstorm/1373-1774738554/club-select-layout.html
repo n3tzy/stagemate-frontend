@@ -1,0 +1,103 @@
+<h2>로그인 후 동아리 선택 — 어떤 방식이 좋으세요?</h2>
+<p class="subtitle">여러 동아리에 가입된 경우에만 표시됩니다</p>
+
+<div class="cards">
+
+  <!-- Option A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#f5f5f5;padding:16px;border-radius:8px;font-family:sans-serif;">
+        <div style="background:#7DB96B;color:white;padding:10px 14px;border-radius:8px;text-align:center;font-size:13px;font-weight:bold;margin-bottom:12px;">✅ 로그인 성공</div>
+        <div style="background:rgba(0,0,0,0.4);border-radius:8px;padding:16px;color:white;text-align:center;">
+          <div style="font-size:12px;margin-bottom:10px;opacity:0.8;">참여 중인 동아리를 선택하세요</div>
+          <div style="background:white;color:#333;border-radius:6px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;text-align:left;">
+            <div style="width:32px;height:32px;background:#7DB96B;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🎭</div>
+            <div>
+              <div style="font-weight:bold;font-size:12px;">한국대학교 극단</div>
+              <div style="font-size:10px;color:#888;">회장</div>
+            </div>
+          </div>
+          <div style="background:white;color:#333;border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:10px;text-align:left;">
+            <div style="width:32px;height:32px;background:#6B9DB9;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">💃</div>
+            <div>
+              <div style="font-weight:bold;font-size:12px;">서울댄스클럽</div>
+              <div style="font-size:10px;color:#888;">멤버</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — 바텀시트 (로그인 위에 오버레이)</h3>
+      <p>로그인 성공 후 바텀시트로 동아리 목록이 올라옴. 선택하면 홈으로 이동. 자연스러운 흐름, 모달 느낌.</p>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#f5f5f5;padding:16px;border-radius:8px;font-family:sans-serif;">
+        <div style="background:#7DB96B;color:white;padding:8px 14px;text-align:center;font-size:12px;font-weight:bold;border-radius:6px 6px 0 0;">StageMate</div>
+        <div style="background:white;padding:16px;border-radius:0 0 8px 8px;border:1px solid #eee;">
+          <div style="font-size:13px;font-weight:bold;margin-bottom:4px;">안녕하세요, 조은혜님 👋</div>
+          <div style="font-size:11px;color:#888;margin-bottom:14px;">입장할 동아리를 선택해 주세요</div>
+          <div style="border:2px solid #7DB96B;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:#7DB96B;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">🎭</div>
+            <div style="flex:1;">
+              <div style="font-weight:bold;font-size:12px;">한국대학교 극단</div>
+              <div style="font-size:10px;color:#7DB96B;">👑 회장</div>
+            </div>
+            <div style="color:#7DB96B;">›</div>
+          </div>
+          <div style="border:1px solid #ddd;border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;background:#6B9DB9;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">💃</div>
+            <div style="flex:1;">
+              <div style="font-weight:bold;font-size:12px;">서울댄스클럽</div>
+              <div style="font-size:10px;color:#888;">멤버</div>
+            </div>
+            <div style="color:#999;">›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — 전용 선택 화면 (풀페이지)</h3>
+      <p>로그인 후 별도 페이지로 이동. 이름 인사 + 동아리 카드 목록. 깔끔하고 명확한 UX. 동아리가 많아도 스크롤 가능.</p>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#f5f5f5;padding:16px;border-radius:8px;font-family:sans-serif;">
+        <div style="background:white;border-radius:8px;border:1px solid #eee;overflow:hidden;">
+          <div style="background:#7DB96B;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="color:white;font-size:12px;font-weight:bold;">StageMate</span>
+            <span style="color:white;font-size:10px;">조은혜</span>
+          </div>
+          <div style="padding:12px;">
+            <div style="font-size:11px;color:#888;margin-bottom:8px;">현재 동아리</div>
+            <div style="background:#7DB96B;color:white;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+              <span style="font-size:14px;">🎭</span>
+              <div>
+                <div style="font-size:12px;font-weight:bold;">한국대학교 극단</div>
+                <div style="font-size:10px;opacity:0.8;">회장으로 활동 중</div>
+              </div>
+            </div>
+            <div style="font-size:11px;color:#888;margin-bottom:6px;">동아리 전환</div>
+            <div style="background:#f9f9f9;border-radius:6px;padding:8px 12px;font-size:11px;display:flex;align-items:center;gap:8px;">
+              <span>💃</span> 서울댄스클럽 (멤버)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — 홈 내 동아리 전환 버튼</h3>
+      <p>로그인 시 첫 번째 동아리로 자동 입장. 홈 앱바에 "전환" 버튼 추가. 언제든 동아리 스위칭 가능. 로그아웃 불필요.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">💡 A나 B는 로그인 시 선택, C는 로그인 후 언제든 전환 가능한 방식입니다</p>

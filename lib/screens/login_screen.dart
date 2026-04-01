@@ -160,7 +160,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
-                                '이메일을 확인하세요. 임시 비밀번호가 발송됐습니다.',
+                                '이메일을 확인하세요. 임시 비밀번호가 발송되었습니다.',
                               ),
                               backgroundColor: Colors.green,
                               duration: Duration(seconds: 4),

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:gal/gal.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -109,7 +110,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.campaign,
+                      FaIcon(FontAwesomeIcons.bullhorn,
                           size: MediaQuery.of(context).size.width >= 600 ? 80 : 56,
                           color: colorScheme.outline),
                       const SizedBox(height: 8),
@@ -305,7 +306,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
       await ApiClient.deleteNotice(widget.noticeId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('삭제됐습니다.')),
+        const SnackBar(content: Text('삭제되었습니다.')),
       );
       await widget.onDeleted();
       if (mounted) Navigator.pop(context);
@@ -340,7 +341,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
       }
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(const SnackBar(
-        content: Text('갤러리에 저장됐습니다!'),
+        content: Text('갤러리에 저장되었습니다!'),
         backgroundColor: Colors.green,
       ));
     } catch (_) {
@@ -823,7 +824,7 @@ class _NoticeCreateScreenState extends State<NoticeCreateScreen> {
       if (mounted && result.containsKey('id')) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('공지사항이 등록됐습니다!'),
+            content: Text('공지사항이 등록되었습니다!'),
             backgroundColor: Colors.green,
           ),
         );

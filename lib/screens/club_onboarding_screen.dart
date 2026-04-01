@@ -688,7 +688,7 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              _logoFile != null ? '로고가 선택됐어요 ✓' : '탭해서 사진첩에서 선택',
+              _logoFile != null ? '로고가 선택되었어요 ✓' : '탭해서 사진첩에서 선택',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,

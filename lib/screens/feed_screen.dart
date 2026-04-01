@@ -401,7 +401,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
         await ApiClient.reportPost(postId, result);
       }
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('신고가 접수됐어요.'), backgroundColor: Colors.orange),
+        const SnackBar(content: Text('신고가 접수되었어요.'), backgroundColor: Colors.orange),
       );
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -437,7 +437,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('홍보가 시작됐습니다! 🚀'),
+            content: Text('홍보가 시작되었습니다! 🚀'),
             backgroundColor: Colors.green,
           ),
         );

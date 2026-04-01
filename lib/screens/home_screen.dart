@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -161,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<NavigationDestination> get _destinations {
     return [
       const NavigationDestination(
-        icon: Icon(Icons.campaign),
+        icon: FaIcon(FontAwesomeIcons.bullhorn),
         label: '공지사항',
       ),
       const NavigationDestination(
@@ -584,7 +585,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         if (mounted) setState(() => _avatarUrl = null);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('프로필 사진이 삭제됐어요.')),
+            const SnackBar(content: Text('프로필 사진이 삭제되었어요.')),
           );
         }
       } catch (e) {
@@ -659,7 +660,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(const SnackBar(
-              content: Text('프로필 사진이 업데이트됐어요!'),
+              content: Text('프로필 사진이 업데이트되었어요!'),
               backgroundColor: Colors.green,
             ));
         }
@@ -721,7 +722,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         Navigator.pop(dialogCtx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(result['message'] ?? result['detail'] ?? '닉네임이 설정됐어요.'),
+                            content: Text(result['message'] ?? result['detail'] ?? '닉네임이 설정되었어요.'),
                             backgroundColor: result.containsKey('message') ? Colors.green : Colors.red,
                           ),
                         );

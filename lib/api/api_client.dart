@@ -7,7 +7,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 // ── 예외 클래스 ──────────────────────────────────────
 class UnauthorizedException implements Exception {
   final String message;
-  const UnauthorizedException([this.message = '로그인이 만료됐습니다. 다시 로그인해주세요.']);
+  const UnauthorizedException([this.message = '로그인이 만료되었습니다. 다시 로그인해주세요.']);
   @override
   String toString() => message;
 }
@@ -724,7 +724,7 @@ class ApiClient {
       Uri.parse(url),
       headers: await _headers(),
     ).timeout(_timeout);
-    if (response.statusCode == 403) throw Exception('스토리지 용량이 초과됐습니다.');
+    if (response.statusCode == 403) throw Exception('스토리지 용량이 초과되었습니다.');
     return _parseResponse(response);
   }
 

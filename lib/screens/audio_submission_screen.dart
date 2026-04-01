@@ -141,7 +141,7 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
           ..hideCurrentSnackBar()
           ..showSnackBar(
             const SnackBar(
-              content: Text('공연이 등록됐습니다.'),
+              content: Text('공연이 등록되었습니다.'),
               backgroundColor: Colors.green,
             ),
           );
@@ -190,7 +190,7 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
       await ApiClient.deletePerformance(_clubId!, perf['id'] as int);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('공연이 삭제됐습니다.')),
+          const SnackBar(content: Text('공연이 삭제되었습니다.')),
         );
         await _load();
       }
@@ -1005,7 +1005,7 @@ class _TeamLeaderSubmitSheetState
               children: [
                 Icon(Icons.music_note, color: Theme.of(context).colorScheme.primary, size: 20),
                 const SizedBox(width: 8),
-                const Text('음원이 제출됐습니다!'),
+                const Text('음원이 제출되었습니다!'),
               ],
             ),
             backgroundColor: Colors.green,
@@ -1058,7 +1058,7 @@ class _TeamLeaderSubmitSheetState
       if (mounted) {
         setState(() => _mySubmission = null);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('제출이 삭제됐습니다.')),
+          const SnackBar(content: Text('제출이 삭제되었습니다.')),
         );
         widget.onChanged();
       }
