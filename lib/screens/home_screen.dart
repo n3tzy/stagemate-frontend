@@ -19,6 +19,7 @@ import 'feed_screen.dart';
 import 'my_activity_screen.dart';
 import 'notifications_screen.dart';
 import 'audio_submission_screen.dart';
+import 'search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String displayName;
@@ -1034,6 +1035,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ],
         ),
         actions: [
+          // 검색 버튼
+          IconButton(
+            icon: const FaIcon(FontAwesomeIcons.magnifyingGlass),
+            onPressed: () async {
+              final userId = await ApiClient.getUserId() ?? 0;
+              if (!context.mounted) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SearchScreen(myUserId: userId),
+                ),
+              );
+            },
+            tooltip: '검색',
+          ),
           // 알림 벨 아이콘
           Stack(
             children: [

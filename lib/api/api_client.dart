@@ -576,6 +576,22 @@ class ApiClient {
     return jsonDecode(utf8.decode(response.bodyBytes));
   }
 
+  static Future<List<dynamic>> searchPosts({
+    required String q,
+    required bool isGlobal,
+  }) async {
+    final uri = Uri.parse(
+      '$baseUrl/posts/search?q=${Uri.encodeQueryComponent(q)}&is_global=$isGlobal',
+    );
+    final response = await http.get(
+      uri,
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 401) throw const UnauthorizedException();
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+  }
+
   static Future<Map<String, dynamic>> createPost({
     required String content,
     List<String> mediaUrls = const [],
