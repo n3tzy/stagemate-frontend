@@ -1037,7 +1037,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         actions: [
           // 검색 버튼
           IconButton(
-            icon: const FaIcon(FontAwesomeIcons.magnifyingGlass),
+            icon: const FaIcon(FontAwesomeIcons.magnifyingGlass, size: 20),
             onPressed: () async {
               final userId = await ApiClient.getUserId() ?? 0;
               if (!context.mounted) return;
