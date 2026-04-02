@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -42,7 +43,7 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        fontFamily: 'ZenSerif',
+        textTheme: GoogleFonts.notoSerifKrTextTheme(),
       ),
       builder: (context, child) {
         // 시스템 글꼴 크기 설정을 그대로 존중 (iOS/Android 접근성)

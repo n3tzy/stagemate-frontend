@@ -61,6 +61,7 @@ dependencies:
   url_launcher: ^6.3.0                 # SNS 링크 열기
   share_plus: ^10.1.4               # 링크 공유
   font_awesome_flutter: ^10.8.0        # 인스타그램/유튜브 브랜드 아이콘
+  google_fonts: ^6.2.1                 # 한국어 Noto Serif KR 폰트
 
 dev_dependencies:
   flutter_test:
