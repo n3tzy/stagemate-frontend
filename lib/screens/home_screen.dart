@@ -21,6 +21,7 @@ import 'notifications_screen.dart';
 import 'audio_submission_screen.dart';
 import 'search_screen.dart';
 import 'performance_archive_screen.dart';
+import 'challenge_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String displayName;
@@ -157,6 +158,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         clubId: _currentClubId,
         isAdmin: _isAdmin,
       ),
+      ChallengeScreen(
+        key: ValueKey('challenge_$_currentClubId'),
+        isAdmin: _isAdmin,
+        clubId: _currentClubId,
+      ),
       if (_canOptimizeSchedule) ScheduleScreen(key: ValueKey('schedule_$_currentClubId')),
       GroupScreen(key: ValueKey('group_$_currentClubId')),
       BookingScreen(key: ValueKey('booking_$_currentClubId')),
@@ -180,6 +186,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         icon: Icon(Icons.videocam_outlined),
         selectedIcon: Icon(Icons.videocam),
         label: '공연 기록',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.emoji_events_outlined),
+        selectedIcon: Icon(Icons.emoji_events),
+        label: '챌린지',
       ),
       if (_canOptimizeSchedule)
         const NavigationDestination(

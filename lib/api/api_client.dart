@@ -1119,4 +1119,40 @@ class ApiClient {
     ).timeout(_timeout);
     return _parseResponse(response);
   }
+
+  // ── 챌린지 API ──────────────────────────────────────────
+  static Future<Map<String, dynamic>> getCurrentChallenge() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/challenge/current'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 401) throw const UnauthorizedException();
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> submitChallengeEntry(int archiveId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/challenge/entries'),
+      headers: await _headers(),
+      body: jsonEncode({'archive_id': archiveId}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> withdrawChallengeEntry() async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/challenge/entries/mine'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> toggleChallengeLike(int entryId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/challenge/entries/$entryId/like'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
 }
