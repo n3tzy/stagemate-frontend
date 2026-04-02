@@ -116,14 +116,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ── 곡 추가 다이얼로그 ──────────────────
-  Future<void> _showAddSongDialog() async {
-    final titleController = TextEditingController();
-    final membersController = TextEditingController();
-    int durationMin = 4;
-    int durationSec = 30;
-    int introMin = 1;
-    int introSec = 30;
+  // ── 곡 추가/수정 다이얼로그 ──────────────────
+  Future<void> _showAddSongDialog({int? editIndex}) async {
+    final existing = editIndex != null ? _songs[editIndex] : null;
+    final titleController = TextEditingController(text: existing?['title'] as String? ?? '');
+    final membersController = TextEditingController(
+      text: existing != null ? (existing['members'] as List).join(', ') : '');
+
+    final existingDuration = existing != null ? (existing['duration'] as num).toDouble() : 4.5;
+    final existingIntro = existing != null ? (existing['intro_time'] as num?)?.toDouble() ?? 1.5 : 1.5;
+
+    int durationMin = existingDuration.floor();
+    int durationSec = ((existingDuration - durationMin) * 60).round();
+    int introMin = existingIntro.floor();
+    int introSec = ((existingIntro - introMin) * 60).round();
 
     String fmtPick(int m, int s) => s == 0 ? '$m분' : '$m분 ${s}초';
 
@@ -131,7 +137,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('곡 추가'),
+          title: Text(editIndex != null ? '곡 수정' : '곡 추가'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -233,18 +239,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     .toList();
 
                 setState(() {
-                  _songs.add({
-                    'id': _nextId++,
-                    'title': title,
-                    'members': members,
-                    'duration': duration,
-                    'intro_time': introTime,
-                  });
+                  if (editIndex != null) {
+                    _songs[editIndex] = {
+                      'id': _songs[editIndex]['id'],
+                      'title': title,
+                      'members': members,
+                      'duration': duration,
+                      'intro_time': introTime,
+                    };
+                  } else {
+                    _songs.add({
+                      'id': _nextId++,
+                      'title': title,
+                      'members': members,
+                      'duration': duration,
+                      'intro_time': introTime,
+                    });
+                  }
                   _result = null;
                 });
                 Navigator.pop(dialogCtx);
               },
-              child: const Text('추가'),
+              child: Text(editIndex != null ? '수정' : '추가'),
             ),
           ],
         ),
@@ -496,15 +512,26 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       ],
                     ),
                     isThreeLine: true,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      color: colorScheme.error,
-                      onPressed: () {
-                        setState(() {
-                          _songs.removeAt(i);
-                          _result = null;
-                        });
-                      },
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          color: colorScheme.primary,
+                          onPressed: () => _showAddSongDialog(editIndex: i),
+                          tooltip: '수정',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          color: colorScheme.error,
+                          onPressed: () {
+                            setState(() {
+                              _songs.removeAt(i);
+                              _result = null;
+                            });
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 );

@@ -308,6 +308,160 @@ class _GroupScreenState extends State<GroupScreen> {
     }
   }
 
+  // 내 슬롯 수정 다이얼로그
+  Future<void> _showEditSlotDialog(dynamic slot) async {
+    final days = _days;
+    int selectedDayIndex = days.indexOf(slot['day'] as String);
+    if (selectedDayIndex < 0) selectedDayIndex = 0;
+    double startTime = (slot['start'] as num).toDouble();
+    double endTime = (slot['end'] as num).toDouble();
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final selectedDay = days[selectedDayIndex];
+          return AlertDialog(
+            title: Text('가능 시간 수정\n($_myDisplayName)'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '방 코드: ${_roomCodeController.text.trim()}',
+                      style: TextStyle(
+                        color: Theme.of(ctx).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '요일 선택',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(ctx).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      children: List.generate(days.length, (i) {
+                        final isSelected = selectedDayIndex == i;
+                        return GestureDetector(
+                          onTap: () => setDialogState(() => selectedDayIndex = i),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Theme.of(ctx).colorScheme.primary
+                                  : Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              days[i],
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Theme.of(ctx).colorScheme.onPrimary
+                                    : Theme.of(ctx).colorScheme.onSurface,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '시작: ${_formatClock(startTime)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Slider(
+                      value: startTime,
+                      min: 6.0,
+                      max: 23.0,
+                      divisions: 34,
+                      label: _formatClock(startTime),
+                      onChanged: (val) => setDialogState(() {
+                        startTime = val;
+                        if (endTime <= startTime) endTime = startTime + 1.0;
+                      }),
+                    ),
+                    Text(
+                      '종료: ${_formatClock(endTime)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Slider(
+                      value: endTime,
+                      min: 6.5,
+                      max: 24.0,
+                      divisions: 35,
+                      label: _formatClock(endTime),
+                      onChanged: (val) =>
+                          setDialogState(() { if (val > startTime) endTime = val; }),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(ctx).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.access_time, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$selectedDay  ${_formatClock(startTime)}~${_formatClock(endTime)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('취소'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  setState(() => _isSaving = true);
+                  try {
+                    await ApiClient.deleteAvailability(slot['id'] as int);
+                    await ApiClient.saveAvailability(
+                      roomCode: _roomCodeController.text.trim(),
+                      day: days[selectedDayIndex],
+                      startTime: startTime,
+                      endTime: endTime,
+                    );
+                    if (!mounted) return;
+                    Navigator.pop(dialogContext);
+                    await _loadAvailability();
+                  } catch (e) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(friendlyError(e))));
+                  } finally {
+                    if (mounted) setState(() => _isSaving = false);
+                  }
+                },
+                child: const Text('수정'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   // 공통 시간 찾기
   Future<void> _findCommonSlots() async {
     if (_memberSlots.isEmpty) {
@@ -569,9 +723,18 @@ class _GroupScreenState extends State<GroupScreen> {
                                           : colorScheme.onSecondaryContainer,
                                     ),
                                   ),
-                                  // 내 슬롯만 삭제 버튼 표시
+                                  // 내 슬롯만 수정/삭제 버튼 표시
                                   if (isMe) ...[
                                     const SizedBox(width: 4),
+                                    GestureDetector(
+                                      onTap: () => _showEditSlotDialog(slot),
+                                      child: Icon(
+                                        Icons.edit,
+                                        size: 13,
+                                        color: colorScheme.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
                                     GestureDetector(
                                       onTap: () =>
                                           _deleteSlot(slot['id'] as int),
