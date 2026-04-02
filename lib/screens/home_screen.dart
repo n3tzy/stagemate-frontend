@@ -20,6 +20,7 @@ import 'my_activity_screen.dart';
 import 'notifications_screen.dart';
 import 'audio_submission_screen.dart';
 import 'search_screen.dart';
+import 'performance_archive_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String displayName;
@@ -151,6 +152,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _buildScreens();
         }),
       ),
+      PerformanceArchiveScreen(
+        key: ValueKey('archive_$_currentClubId'),
+        clubId: _currentClubId,
+        isAdmin: _isAdmin,
+      ),
       if (_canOptimizeSchedule) ScheduleScreen(key: ValueKey('schedule_$_currentClubId')),
       GroupScreen(key: ValueKey('group_$_currentClubId')),
       BookingScreen(key: ValueKey('booking_$_currentClubId')),
@@ -169,6 +175,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       const NavigationDestination(
         icon: Icon(Icons.dynamic_feed),
         label: '피드',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.videocam_outlined),
+        selectedIcon: Icon(Icons.videocam),
+        label: '공연 기록',
       ),
       if (_canOptimizeSchedule)
         const NavigationDestination(

@@ -1066,4 +1066,57 @@ class ApiClient {
     if (response.statusCode >= 500) throw ServerException();
     throw Exception(_apiError(response, '좋아요 처리에 실패했습니다'));
   }
+
+  // ── 공연 아카이브 API ─────────────────────────────────────
+  static Future<List<dynamic>> getPerformanceArchives(int clubId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/$clubId/performance-archives'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 401) throw const UnauthorizedException();
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> createPerformanceArchive(
+    int clubId, {
+    required String title,
+    required String performanceDate,
+    String? description,
+    String? youtubeUrl,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/$clubId/performance-archives'),
+      headers: await _headers(),
+      body: jsonEncode({
+        'title': title,
+        'performance_date': performanceDate,
+        if (description != null) 'description': description,
+        if (youtubeUrl != null) 'youtube_url': youtubeUrl,
+      }),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> toggleArchiveLike(
+    int clubId,
+    int archiveId,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/$clubId/performance-archives/$archiveId/like'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> deletePerformanceArchive(
+    int clubId,
+    int archiveId,
+  ) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/clubs/$clubId/performance-archives/$archiveId'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
 }
