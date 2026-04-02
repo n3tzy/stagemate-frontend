@@ -1,9 +1,10 @@
 import 'dart:io';
+import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'download_notification.dart';
 
 /// 비웹 전용 (Windows / Android / iOS / macOS / Linux):
-/// 다운로드 폴더에 파일을 저장하고 경로를 반환
+/// 파일을 저장하고 경로를 반환
 /// 반환값: 저장된 절대 경로 (실패 시 null)
 Future<String?> saveExcelFile(List<int> bytes, String fileName) async {
   try {
@@ -11,12 +12,12 @@ Future<String?> saveExcelFile(List<int> bytes, String fileName) async {
     String savePath;
 
     if (Platform.isAndroid) {
-      const androidDownloads = '/storage/emulated/0/Download';
-      if (Directory(androidDownloads).existsSync()) {
-        savePath = androidDownloads;
-      } else {
-        savePath = Directory.systemTemp.path;
-      }
+      // Android 10+(scoped storage): /storage/emulated/0/Download 에 직접 쓰면
+      // MediaStore 인덱싱이 안 돼 파일 앱에서 보이지 않는 문제가 있음.
+      // → 앱 전용 외부 디렉토리에 저장하고 즉시 open_file로 열어주는 방식으로 처리.
+      final dir = await getExternalStorageDirectory() ??
+          await getApplicationDocumentsDirectory();
+      savePath = dir.path;
     } else if (Platform.isIOS) {
       final dir = await getApplicationDocumentsDirectory();
       savePath = dir.path;
@@ -35,7 +36,12 @@ Future<String?> saveExcelFile(List<int> bytes, String fileName) async {
     }
 
     final filePath = '$savePath$sep$fileName';
-    File(filePath).writeAsBytesSync(bytes);
+    await File(filePath).writeAsBytes(bytes);
+
+    // Android: 저장 즉시 파일 열기 (스프레드시트 앱으로 바로 공유/저장 가능)
+    if (Platform.isAndroid) {
+      await OpenFile.open(filePath);
+    }
 
     // 알림 표시 (비동기, 실패해도 무시)
     showDownloadNotification(
@@ -44,7 +50,7 @@ Future<String?> saveExcelFile(List<int> bytes, String fileName) async {
     ).catchError((_) {});
 
     return filePath;
-  } catch (_) {
+  } catch (e) {
     return null;
   }
 }

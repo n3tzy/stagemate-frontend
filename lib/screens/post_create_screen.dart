@@ -283,7 +283,7 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
                           value: _isGlobal,
                           onChanged: (v) => setState(() {
                             _isGlobal = v;
-                            if (!v) _isAnonymous = false;
+                            _isAnonymous = v;
                           }),
                         ),
                       ],
