@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:gal/gal.dart';
@@ -298,6 +299,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
           noticeId: widget.noticeId,
           initialTitle: _notice!['title'] as String? ?? '',
           initialContent: _notice!['content'] as String? ?? '',
+          initialMediaUrls: (_notice!['media_urls'] as List?)?.cast<String>() ?? [],
         ),
         fullscreenDialog: true,
       ),
@@ -1014,11 +1016,13 @@ class _NoticeEditScreen extends StatefulWidget {
   final int noticeId;
   final String initialTitle;
   final String initialContent;
+  final List<String> initialMediaUrls;
 
   const _NoticeEditScreen({
     required this.noticeId,
     required this.initialTitle,
     required this.initialContent,
+    this.initialMediaUrls = const [],
   });
 
   @override
@@ -1029,19 +1033,181 @@ class _NoticeEditScreenState extends State<_NoticeEditScreen> {
   late final TextEditingController _titleCtrl;
   late final TextEditingController _contentCtrl;
   bool _saving = false;
+  late List<String> _existingUrls;
+  List<XFile> _newFiles = [];
+  final _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     _titleCtrl = TextEditingController(text: widget.initialTitle);
     _contentCtrl = TextEditingController(text: widget.initialContent);
+    _existingUrls = List<String>.from(widget.initialMediaUrls);
   }
 
   @override
   void dispose() {
     _titleCtrl.dispose();
     _contentCtrl.dispose();
+    // _picker doesn't need disposal
     super.dispose();
+  }
+
+  static const _extToMime = <String, String>{
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.mp4': 'video/mp4',
+    '.mov': 'video/quicktime',
+    '.webm': 'video/webm',
+  };
+
+  static const _maxImageBytes = 30 * 1024 * 1024;
+  static const _maxVideoBytes = 1536 * 1024 * 1024;
+
+  Future<bool> _uploadFile(String uploadUrl, List<int> bytes, String contentType) async {
+    try {
+      final response = await http.put(
+        Uri.parse(uploadUrl),
+        headers: {'Content-Type': contentType},
+        body: bytes,
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<List<String>> _uploadFiles() async {
+    if (_newFiles.isEmpty) return [];
+    final urls = <String>[];
+    for (final file in _newFiles) {
+      try {
+        final filename = file.name;
+        final lower = filename.toLowerCase();
+        final dotPos = lower.lastIndexOf('.');
+        final ext = dotPos != -1 ? lower.substring(dotPos) : '';
+        final contentType = _extToMime[ext];
+        if (contentType == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('지원하지 않는 파일 형식이에요: $filename')),
+            );
+          }
+          continue;
+        }
+
+        final isVideo = contentType.startsWith('video/');
+        final maxBytes = isVideo ? _maxVideoBytes : _maxImageBytes;
+        final fileSize = await File(file.path).length();
+        if (fileSize > maxBytes) {
+          final limitMb = maxBytes ~/ (1024 * 1024);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('파일이 너무 커요. 최대 ${limitMb}MB까지 업로드할 수 있어요.')),
+            );
+          }
+          continue;
+        }
+
+        final presigned = await ApiClient.getPresignedUrl(filename, contentType);
+        final uploadUrl = presigned['upload_url'] as String;
+        final publicUrl = presigned['public_url'] as String;
+
+        final bytes = await File(file.path).readAsBytes();
+
+        final validation = isVideo
+            ? FileValidator.validateVideoByExtension(bytes, ext)
+            : FileValidator.validateImageByExtension(bytes, ext);
+        if (!validation.isValid) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(validation.error ?? '파일 검증 실패: $filename')),
+            );
+          }
+          continue;
+        }
+
+        final success = await _uploadFile(uploadUrl, bytes, contentType);
+        if (success) urls.add(publicUrl);
+      } catch (_) {
+        // 개별 파일 업로드 실패 시 건너뜀
+      }
+    }
+    return urls;
+  }
+
+  Future<void> _pickMedia() async {
+    if (_existingUrls.length + _newFiles.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('미디어는 최대 5개까지 첨부할 수 있어요.')),
+      );
+      return;
+    }
+
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('갤러리에서 선택'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('사진 촬영'),
+              onTap: () => Navigator.pop(ctx, 'camera_photo'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam),
+              title: const Text('영상 촬영'),
+              onTap: () => Navigator.pop(ctx, 'camera_video'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (choice == null) return;
+
+    try {
+      if (choice == 'gallery') {
+        final files = await _picker.pickMultipleMedia();
+        if (files.isNotEmpty) {
+          setState(() {
+            final remaining = 5 - _existingUrls.length;
+            _newFiles = [..._newFiles, ...files].take(remaining).toList();
+          });
+        }
+      } else if (choice == 'camera_photo') {
+        final file = await _picker.pickImage(source: ImageSource.camera);
+        if (file != null) {
+          setState(() {
+            final remaining = 5 - _existingUrls.length;
+            _newFiles = [..._newFiles, file].take(remaining).toList();
+          });
+        }
+      } else if (choice == 'camera_video') {
+        final file = await _picker.pickVideo(source: ImageSource.camera);
+        if (file != null) {
+          setState(() {
+            final remaining = 5 - _existingUrls.length;
+            _newFiles = [..._newFiles, file].take(remaining).toList();
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyError(e))),
+        );
+      }
+    }
   }
 
   Future<void> _save() async {
@@ -1050,10 +1216,13 @@ class _NoticeEditScreenState extends State<_NoticeEditScreen> {
     if (title.isEmpty || content.isEmpty || _saving) return;
     setState(() => _saving = true);
     try {
+      final newUrls = await _uploadFiles();
+      final allUrls = [..._existingUrls, ...newUrls];
       await ApiClient.updateNotice(
         widget.noticeId,
         title: title,
         content: content,
+        mediaUrls: allUrls,
       );
       if (!mounted) return;
       Navigator.pop(context, true);
@@ -1119,6 +1288,54 @@ class _NoticeEditScreenState extends State<_NoticeEditScreen> {
                 textAlignVertical: TextAlignVertical.top,
               ),
             ),
+            // 미디어 섹션
+            const SizedBox(height: 12),
+            if (_existingUrls.isNotEmpty || _newFiles.isNotEmpty) ...[
+              SizedBox(
+                height: 80,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _existingUrls.length + _newFiles.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (_, i) {
+                    final isExisting = i < _existingUrls.length;
+                    final child = isExisting
+                        ? Image.network(_existingUrls[i], width: 80, height: 80, fit: BoxFit.cover)
+                        : FutureBuilder<Uint8List>(
+                            future: _newFiles[i - _existingUrls.length].readAsBytes(),
+                            builder: (_, snap) => snap.hasData
+                                ? Image.memory(snap.data!, width: 80, height: 80, fit: BoxFit.cover)
+                                : const SizedBox(width: 80, height: 80, child: Center(child: CircularProgressIndicator())),
+                          );
+                    return Stack(
+                      children: [
+                        ClipRRect(borderRadius: BorderRadius.circular(6), child: child),
+                        Positioned(
+                          top: 2, right: 2,
+                          child: GestureDetector(
+                            onTap: () => setState(() {
+                              if (isExisting) _existingUrls.removeAt(i);
+                              else _newFiles.removeAt(i - _existingUrls.length);
+                            }),
+                            child: Container(
+                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                              child: const Icon(Icons.close, size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+            if (_existingUrls.length + _newFiles.length < 5)
+              TextButton.icon(
+                onPressed: _pickMedia,
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: const Text('사진 추가'),
+              ),
           ],
           ),
         ),

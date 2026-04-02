@@ -439,11 +439,12 @@ class ApiClient {
     int id, {
     required String title,
     required String content,
+    List<String> mediaUrls = const [],
   }) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/notices/$id'),
       headers: await _headers(),
-      body: jsonEncode({'title': title, 'content': content, 'media_urls': []}),
+      body: jsonEncode({'title': title, 'content': content, 'media_urls': mediaUrls}),
     ).timeout(_timeout);
     return _parseResponse(response);
   }
@@ -690,11 +691,11 @@ class ApiClient {
     return _parseResponse(response);
   }
 
-  static Future<Map<String, dynamic>> updatePost(int postId, String content) async {
+  static Future<Map<String, dynamic>> updatePost(int postId, String content, {List<String> mediaUrls = const []}) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/posts/$postId'),
       headers: await _headers(),
-      body: jsonEncode({'content': content}),
+      body: jsonEncode({'content': content, 'media_urls': mediaUrls}),
     ).timeout(_timeout);
     return _parseResponse(response);
   }
