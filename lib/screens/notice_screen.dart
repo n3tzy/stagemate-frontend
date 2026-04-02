@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../api/api_client.dart';
 import '../utils/file_validator.dart';
+import '../widgets/media_viewer_screen.dart';
 
 // ─── 공지사항 목록 화면 ───────────────────────────────────────────────────────
 class NoticeScreen extends StatefulWidget {
@@ -459,38 +460,49 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
                                 final url = (_notice!['media_urls'] as List).cast<String>()[i];
                                 final ext = url.split('.').last.split('?').first.toLowerCase();
                                 final isVideo = ['mp4', 'mov', 'webm', 'avi'].contains(ext);
-                                return Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: isVideo
-                                          ? Container(
-                                              width: 160,
-                                              height: 160,
-                                              color: Colors.black87,
-                                              child: const Icon(Icons.play_circle_fill,
-                                                  color: Colors.white, size: 48),
-                                            )
-                                          : Image.network(url,
-                                              height: 160, width: 160, fit: BoxFit.cover),
-                                    ),
-                                    Positioned(
-                                      right: 4,
-                                      bottom: 4,
-                                      child: GestureDetector(
-                                        onTap: () => _downloadMedia(url),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(6),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black54,
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: const Icon(Icons.download,
-                                              color: Colors.white, size: 18),
-                                        ),
+                                return GestureDetector(
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => MediaViewerScreen(
+                                        urls: (_notice!['media_urls'] as List).cast<String>(),
+                                        initialIndex: i,
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: isVideo
+                                            ? Container(
+                                                width: 160,
+                                                height: 160,
+                                                color: Colors.black87,
+                                                child: const Icon(Icons.play_circle_fill,
+                                                    color: Colors.white, size: 48),
+                                              )
+                                            : Image.network(url,
+                                                height: 160, width: 160, fit: BoxFit.cover),
+                                      ),
+                                      Positioned(
+                                        right: 4,
+                                        bottom: 4,
+                                        child: GestureDetector(
+                                          onTap: () => _downloadMedia(url),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black54,
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Icon(Icons.download,
+                                                color: Colors.white, size: 18),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 );
                               },
                             ),
@@ -1078,12 +1090,13 @@ class _NoticeEditScreenState extends State<_NoticeEditScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _titleCtrl,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              TextField(
+                controller: _titleCtrl,
               decoration: const InputDecoration(
                 labelText: '제목',
                 border: OutlineInputBorder(),
@@ -1107,6 +1120,7 @@ class _NoticeEditScreenState extends State<_NoticeEditScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

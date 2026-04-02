@@ -170,7 +170,7 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
       } else if (purchase.status == PurchaseStatus.error) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('구매 오류: ${purchase.error?.message ?? "알 수 없는 오류"}'), backgroundColor: Colors.red),
+            SnackBar(content: Text(_friendlyPurchaseError(purchase.error)), backgroundColor: Colors.red),
           );
         }
       }
@@ -179,6 +179,24 @@ class _ClubSubscriptionScreenState extends State<ClubSubscriptionScreen> {
       }
     }
     if (mounted) setState(() => _purchasing = false);
+  }
+
+  String _friendlyPurchaseError(IAPError? error) {
+    final code = error?.code ?? '';
+    final msg = error?.message ?? '';
+    if (code == 'storekit_duplicate_product_object' || msg.contains('itemAlreadyOwned') || msg.contains('already owned')) {
+      return '이미 보유 중인 플랜입니다. 구독 복원을 시도해 보세요.';
+    }
+    if (msg.contains('userCancelled') || msg.contains('user_cancelled') || msg.contains('cancel')) {
+      return '결제가 취소되었습니다.';
+    }
+    if (msg.contains('networkError') || msg.contains('network_error') || msg.contains('SocketException')) {
+      return '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+    }
+    if (msg.contains('serviceUnavailable') || msg.contains('service_unavailable')) {
+      return '스토어 서비스를 일시적으로 이용할 수 없습니다. 잠시 후 다시 시도해주세요.';
+    }
+    return '결제 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
   }
 
   String _planLabel(String plan) {

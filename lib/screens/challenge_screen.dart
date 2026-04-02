@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
 import '../widgets/youtube_card.dart';
 
@@ -105,12 +107,23 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
     final myClubId = _data?['my_club_id'] as int?;
     final isParticipating = entries.any(
         (e) => (e as Map)['club_id'] == myClubId);
+    final myRank = myClubId != null && entries.isNotEmpty
+        ? entries.indexWhere((e) => (e as Map)['club_id'] == myClubId) + 1
+        : 0;
 
     return Scaffold(
       appBar: AppBar(
         title: Text('$yearMonth 챌린지'),
         backgroundColor: colorScheme.primaryContainer,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () => Share.share(
+              'StageMate 공연 랭킹을 확인해보세요! 🎵\nhttps://stagemate.netzy.dev/ranking',
+              subject: 'StageMate 공연 랭킹',
+            ),
+            tooltip: '랭킹 공유',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _load,
@@ -145,6 +158,19 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                                     color: Colors.white.withOpacity(0.8),
                                     fontSize: 12)),
                             Text('D-$daysLeft',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        Column(
+                          children: [
+                            Text('내 동아리',
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 12)),
+                            Text(myRank > 0 ? '$myRank위' : '-',
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 24,
@@ -189,104 +215,147 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   const SizedBox(height: 16),
 
                   // 랭킹 목록
-                  ...entries.asMap().entries.map((e) {
-                    final rank = e.key + 1;
-                    final entry = e.value as Map<String, dynamic>;
-                    final liked = entry['my_liked'] as bool? ?? false;
-                    final likesCount = entry['likes_count'] as int? ?? 0;
-                    final youtubeUrl = entry['youtube_url'] as String?;
-                    final isFirst = rank == 1;
+                  if (entries.isNotEmpty)
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.75,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                      ),
+                      itemCount: entries.length,
+                      itemBuilder: (context, idx) {
+                        final rank = idx + 1;
+                        final entry = entries[idx] as Map<String, dynamic>;
+                        final liked = entry['my_liked'] as bool? ?? false;
+                        final likesCount = entry['likes_count'] as int? ?? 0;
+                        final youtubeUrl = entry['youtube_url'] as String?;
+                        final isFirst = rank == 1;
+                        final videoId = youtubeUrl != null ? extractYouTubeId(youtubeUrl) : null;
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      shape: isFirst
-                          ? RoundedRectangleBorder(
-                              side: BorderSide(
-                                  color: Colors.amber.shade600, width: 2),
-                              borderRadius: BorderRadius.circular(12))
-                          : null,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (youtubeUrl != null && youtubeUrl.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Stack(
-                                children: [
-                                  YouTubeCard(youtubeUrl: youtubeUrl),
-                                  if (isFirst)
-                                    Positioned(
-                                      top: 8, left: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.amber.shade600,
-                                          borderRadius:
-                                              BorderRadius.circular(6),
-                                        ),
-                                        child: const Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.workspace_premium,
-                                                size: 14,
-                                                color: Colors.white),
-                                            SizedBox(width: 3),
-                                            Text('1위',
-                                                style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight:
-                                                        FontWeight.bold,
-                                                    fontSize: 12)),
-                                          ],
+                        return Card(
+                          shape: isFirst
+                              ? RoundedRectangleBorder(
+                                  side: BorderSide(color: Colors.amber.shade600, width: 2),
+                                  borderRadius: BorderRadius.circular(12))
+                              : null,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: youtubeUrl != null
+                                ? () => launchUrl(Uri.parse(youtubeUrl),
+                                    mode: LaunchMode.externalApplication)
+                                : null,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // 썸네일
+                                Expanded(
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                        child: videoId != null
+                                            ? Image.network(
+                                                'https://img.youtube.com/vi/$videoId/mqdefault.jpg',
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) => Container(
+                                                  color: const Color(0xFF1a1a2e),
+                                                  child: const Icon(Icons.play_circle_outline,
+                                                      color: Colors.white54, size: 36),
+                                                ),
+                                              )
+                                            : Container(
+                                                color: const Color(0xFF1a1a2e),
+                                                child: const Icon(Icons.music_note,
+                                                    color: Colors.white54, size: 36),
+                                              ),
+                                      ),
+                                      // 순위 배지
+                                      Positioned(
+                                        top: 6, left: 6,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 7, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: isFirst ? Colors.amber.shade600 : Colors.black54,
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (isFirst) ...[
+                                                const Icon(Icons.workspace_premium,
+                                                    size: 12, color: Colors.white),
+                                                const SizedBox(width: 2),
+                                              ],
+                                              Text('$rank위',
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.bold)),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: isFirst
-                                  ? Colors.amber.shade100
-                                  : colorScheme.surfaceContainerHighest,
-                              child: Text('$rank',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: isFirst
-                                          ? Colors.amber.shade800
-                                          : null)),
-                            ),
-                            title: Text(
-                                entry['club_name'] as String? ?? '',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
-                            subtitle: Text(
-                                entry['archive_title'] as String? ?? ''),
-                            trailing: GestureDetector(
-                              onTap: () => _toggleLike(
-                                  entry['entry_id'] as int),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    liked
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: liked ? Colors.red : null,
-                                    size: 22,
+                                    ],
                                   ),
-                                  Text('$likesCount',
-                                      style:
-                                          const TextStyle(fontSize: 11)),
-                                ],
-                              ),
+                                ),
+                                // 정보
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        entry['club_name'] as String? ?? '',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold, fontSize: 13),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              entry['archive_title'] as String? ?? '',
+                                              style: const TextStyle(
+                                                  fontSize: 11, color: Colors.grey),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () => _toggleLike(entry['entry_id'] as int),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  liked ? Icons.favorite : Icons.favorite_border,
+                                                  color: liked ? Colors.red : Colors.grey,
+                                                  size: 16,
+                                                ),
+                                                const SizedBox(width: 2),
+                                                Text('$likesCount',
+                                                    style: const TextStyle(fontSize: 11)),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    );
-                  }),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),

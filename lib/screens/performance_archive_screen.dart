@@ -290,16 +290,16 @@ class _ArchiveAddScreenState extends State<_ArchiveAddScreen> {
               maxLength: 100,
             ),
             const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('공연 날짜 *'),
-              subtitle: Text(
-                '${_selectedDate.year}년 ${_selectedDate.month}월 ${_selectedDate.day}일'),
-              trailing: const Icon(Icons.calendar_today),
+            InkWell(
               onTap: _pickDate,
-              shape: RoundedRectangleBorder(
-                side: BorderSide(color: colorScheme.outline),
-                borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(4),
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: '공연 날짜 *',
+                  border: OutlineInputBorder(),
+                  suffixIcon: Icon(Icons.calendar_today),
+                ),
+                child: Text('${_selectedDate.year}년 ${_selectedDate.month}월 ${_selectedDate.day}일'),
               ),
             ),
             const SizedBox(height: 12),

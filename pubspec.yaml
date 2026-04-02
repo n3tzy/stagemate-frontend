@@ -59,6 +59,7 @@ dependencies:
   path_provider: ^2.1.4
   gal: ^1.1.0              # 갤러리 저장 (이미지/영상)
   url_launcher: ^6.3.0                 # SNS 링크 열기
+  share_plus: ^10.1.4               # 링크 공유
   font_awesome_flutter: ^10.8.0        # 인스타그램/유튜브 브랜드 아이콘
 
 dev_dependencies:
