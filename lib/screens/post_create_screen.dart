@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import '../api/api_client.dart';
 import '../utils/file_validator.dart';
+import '../widgets/youtube_card.dart';
 
 class PostCreateScreen extends StatefulWidget {
   final bool isGlobal;
@@ -16,11 +17,13 @@ class PostCreateScreen extends StatefulWidget {
 
 class _PostCreateScreenState extends State<PostCreateScreen> {
   final _contentCtrl = TextEditingController();
+  final _youtubeCtrl = TextEditingController();
   final _picker = ImagePicker();
   List<XFile> _selectedFiles = [];
   bool _isSubmitting = false;
   bool _isGlobal = false;
   bool _isAnonymous = false;
+  bool _showYoutubeField = false;
 
   @override
   void initState() {
@@ -31,6 +34,7 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
   @override
   void dispose() {
     _contentCtrl.dispose();
+    _youtubeCtrl.dispose();
     super.dispose();
   }
 
@@ -221,6 +225,9 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
         mediaUrls: mediaUrls,
         isGlobal: _isGlobal,
         isAnonymous: _isAnonymous,
+        youtubeUrl: _youtubeCtrl.text.trim().isEmpty
+            ? null
+            : _youtubeCtrl.text.trim(),
       );
 
       if (mounted) Navigator.pop(context, _isGlobal);
@@ -358,8 +365,30 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
                   '${_selectedFiles.length}/5',
                   style: TextStyle(color: colorScheme.outline, fontSize: 12),
                 ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.ondemand_video, color: Colors.red),
+                  tooltip: 'YouTube 링크',
+                  onPressed: () => setState(() => _showYoutubeField = !_showYoutubeField),
+                ),
               ],
             ),
+            if (_showYoutubeField) ...[
+              const SizedBox(height: 8),
+              TextField(
+                controller: _youtubeCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'YouTube URL',
+                  prefixIcon: Icon(Icons.link, color: Colors.red),
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              if (_youtubeCtrl.text.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                YouTubeCard(youtubeUrl: _youtubeCtrl.text.trim()),
+              ],
+            ],
             if (_selectedFiles.isNotEmpty) ...[
               const SizedBox(height: 12),
               SizedBox(

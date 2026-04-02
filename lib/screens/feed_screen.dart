@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../api/api_client.dart';
+import '../widgets/youtube_card.dart';
 import 'comments_screen.dart';
 import 'post_create_screen.dart';
 import 'club_profile_sheet.dart';
@@ -440,6 +441,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
     final colorScheme = Theme.of(context).colorScheme;
     final isMyPost = (post['author_id'] as int?) == _myUserId;
     final mediaUrls = (post['media_urls'] as List?) ?? [];
+    final youtubeUrl = post['youtube_url'] as String?;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -548,6 +550,11 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                   ),
                 ),
               ],
+              if (youtubeUrl != null && youtubeUrl.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: YouTubeCard(youtubeUrl: youtubeUrl),
+                ),
               const SizedBox(height: 10),
               Row(
                 children: [

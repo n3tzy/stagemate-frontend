@@ -618,6 +618,7 @@ class ApiClient {
     List<String> mediaUrls = const [],
     bool isGlobal = false,
     bool isAnonymous = false,
+    String? youtubeUrl,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/posts'),
@@ -627,6 +628,7 @@ class ApiClient {
         'media_urls': mediaUrls,
         'is_global': isGlobal,
         'is_anonymous': isAnonymous,
+        if (youtubeUrl != null) 'youtube_url': youtubeUrl,
       }),
     ).timeout(_timeout);
     return _parseResponse(response);
@@ -1063,5 +1065,94 @@ class ApiClient {
     if (response.statusCode == 403) throw Exception('권한이 없습니다.');
     if (response.statusCode >= 500) throw ServerException();
     throw Exception(_apiError(response, '좋아요 처리에 실패했습니다'));
+  }
+
+  // ── 공연 아카이브 API ─────────────────────────────────────
+  static Future<List<dynamic>> getPerformanceArchives(int clubId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/clubs/$clubId/performance-archives'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 401) throw const UnauthorizedException();
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> createPerformanceArchive(
+    int clubId, {
+    required String title,
+    required String performanceDate,
+    String? description,
+    String? youtubeUrl,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/$clubId/performance-archives'),
+      headers: await _headers(),
+      body: jsonEncode({
+        'title': title,
+        'performance_date': performanceDate,
+        if (description != null) 'description': description,
+        if (youtubeUrl != null) 'youtube_url': youtubeUrl,
+      }),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> toggleArchiveLike(
+    int clubId,
+    int archiveId,
+  ) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/$clubId/performance-archives/$archiveId/like'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> deletePerformanceArchive(
+    int clubId,
+    int archiveId,
+  ) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/clubs/$clubId/performance-archives/$archiveId'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  // ── 챌린지 API ──────────────────────────────────────────
+  static Future<Map<String, dynamic>> getCurrentChallenge() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/challenge/current'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    if (response.statusCode == 401) throw const UnauthorizedException();
+    if (response.statusCode >= 500) throw ServerException();
+    return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> submitChallengeEntry(int archiveId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/challenge/entries'),
+      headers: await _headers(),
+      body: jsonEncode({'archive_id': archiveId}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> withdrawChallengeEntry() async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/challenge/entries/mine'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
+  static Future<Map<String, dynamic>> toggleChallengeLike(int entryId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/challenge/entries/$entryId/like'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
   }
 }
