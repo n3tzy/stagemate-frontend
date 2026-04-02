@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
@@ -247,6 +248,46 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                                 ? () => launchUrl(Uri.parse(youtubeUrl),
                                     mode: LaunchMode.externalApplication)
                                 : null,
+                            onLongPress: () {
+                              final clubId = entry['club_id'];
+                              final clubName = entry['club_name'] as String? ?? '';
+                              final url = 'https://stagemate.netzy.dev/clubs/$clubId/public';
+                              showModalBottomSheet(
+                                context: context,
+                                builder: (ctx) => SafeArea(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(Icons.link),
+                                        title: Text(clubName),
+                                        subtitle: Text(url, style: const TextStyle(fontSize: 11)),
+                                      ),
+                                      const Divider(height: 1),
+                                      ListTile(
+                                        leading: const Icon(Icons.copy),
+                                        title: const Text('링크 복사'),
+                                        onTap: () {
+                                          Clipboard.setData(ClipboardData(text: url));
+                                          Navigator.pop(ctx);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('링크가 복사되었습니다!')),
+                                          );
+                                        },
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(Icons.share_outlined),
+                                        title: const Text('공유하기'),
+                                        onTap: () {
+                                          Navigator.pop(ctx);
+                                          Share.share(url, subject: '$clubName 공연 기록');
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [

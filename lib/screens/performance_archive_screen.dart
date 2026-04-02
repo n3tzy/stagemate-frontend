@@ -94,6 +94,19 @@ class _PerformanceArchiveScreenState extends State<PerformanceArchiveScreen> {
     ).then((_) => _load());
   }
 
+  void _openEdit(Map<String, dynamic> archive) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _ArchiveAddScreen(
+          clubId: widget.clubId,
+          existingArchive: archive,
+        ),
+        fullscreenDialog: true,
+      ),
+    ).then((_) => _load());
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -174,6 +187,12 @@ class _PerformanceArchiveScreenState extends State<PerformanceArchiveScreen> {
                                         style: const TextStyle(fontSize: 12)),
                                     if (widget.isAdmin)
                                       IconButton(
+                                        icon: Icon(Icons.edit_outlined,
+                                            color: colorScheme.primary, size: 20),
+                                        onPressed: () => _openEdit(a),
+                                      ),
+                                    if (widget.isAdmin)
+                                      IconButton(
                                         icon: Icon(Icons.delete_outline,
                                             color: colorScheme.error, size: 20),
                                         onPressed: () =>
@@ -203,18 +222,47 @@ class _PerformanceArchiveScreenState extends State<PerformanceArchiveScreen> {
 // ── 공연 기록 추가 화면 ────────────────────────────────────────
 class _ArchiveAddScreen extends StatefulWidget {
   final int clubId;
-  const _ArchiveAddScreen({required this.clubId});
+  final Map<String, dynamic>? existingArchive; // null = add mode, non-null = edit mode
+  const _ArchiveAddScreen({required this.clubId, this.existingArchive});
 
   @override
   State<_ArchiveAddScreen> createState() => _ArchiveAddScreenState();
 }
 
 class _ArchiveAddScreenState extends State<_ArchiveAddScreen> {
-  final _titleCtrl = TextEditingController();
-  final _descCtrl = TextEditingController();
-  final _youtubeCtrl = TextEditingController();
+  late final TextEditingController _titleCtrl;
+  late final TextEditingController _descCtrl;
+  late final TextEditingController _youtubeCtrl;
   DateTime _selectedDate = DateTime.now();
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleCtrl = TextEditingController();
+    _descCtrl = TextEditingController();
+    _youtubeCtrl = TextEditingController();
+    if (widget.existingArchive != null) {
+      final a = widget.existingArchive!;
+      _titleCtrl.text = a['title'] as String? ?? '';
+      _descCtrl.text = a['description'] as String? ?? '';
+      _youtubeCtrl.text = a['youtube_url'] as String? ?? '';
+      // Parse date from 'YYYY-MM-DD' string
+      final dateStr = a['performance_date'] as String? ?? '';
+      if (dateStr.isNotEmpty) {
+        try {
+          final parts = dateStr.split('-');
+          if (parts.length == 3) {
+            _selectedDate = DateTime(
+              int.parse(parts[0]),
+              int.parse(parts[1]),
+              int.parse(parts[2]),
+            );
+          }
+        } catch (_) {}
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -237,15 +285,28 @@ class _ArchiveAddScreenState extends State<_ArchiveAddScreen> {
   Future<void> _save() async {
     if (_titleCtrl.text.trim().isEmpty || _saving) return;
     setState(() => _saving = true);
+    final dateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
     try {
-      await ApiClient.createPerformanceArchive(
-        widget.clubId,
-        title: _titleCtrl.text.trim(),
-        performanceDate:
-            '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
-        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-        youtubeUrl: _youtubeCtrl.text.trim().isEmpty ? null : _youtubeCtrl.text.trim(),
-      );
+      if (widget.existingArchive != null) {
+        // Edit mode
+        await ApiClient.updatePerformanceArchive(
+          widget.clubId,
+          widget.existingArchive!['id'] as int,
+          title: _titleCtrl.text.trim(),
+          performanceDate: dateStr,
+          description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+          youtubeUrl: _youtubeCtrl.text.trim().isEmpty ? null : _youtubeCtrl.text.trim(),
+        );
+      } else {
+        // Add mode
+        await ApiClient.createPerformanceArchive(
+          widget.clubId,
+          title: _titleCtrl.text.trim(),
+          performanceDate: dateStr,
+          description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+          youtubeUrl: _youtubeCtrl.text.trim().isEmpty ? null : _youtubeCtrl.text.trim(),
+        );
+      }
       if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
@@ -261,7 +322,7 @@ class _ArchiveAddScreenState extends State<_ArchiveAddScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('공연 기록 추가'),
+        title: Text(widget.existingArchive != null ? '공연 기록 수정' : '공연 기록 추가'),
         backgroundColor: colorScheme.primaryContainer,
         actions: [
           Padding(

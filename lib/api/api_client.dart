@@ -1110,6 +1110,27 @@ class ApiClient {
     return _parseResponse(response);
   }
 
+  static Future<Map<String, dynamic>> updatePerformanceArchive(
+    int clubId,
+    int archiveId, {
+    required String title,
+    required String performanceDate,
+    String? description,
+    String? youtubeUrl,
+  }) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/clubs/$clubId/performance-archives/$archiveId'),
+      headers: await _headers(),
+      body: jsonEncode({
+        'title': title,
+        'performance_date': performanceDate,
+        'description': description,
+        'youtube_url': youtubeUrl,
+      }),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
   static Future<Map<String, dynamic>> deletePerformanceArchive(
     int clubId,
     int archiveId,
