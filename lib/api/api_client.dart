@@ -435,6 +435,19 @@ class ApiClient {
     return _parseResponse(response);
   }
 
+  static Future<Map<String, dynamic>> updateNotice(
+    int id, {
+    required String title,
+    required String content,
+  }) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/notices/$id'),
+      headers: await _headers(),
+      body: jsonEncode({'title': title, 'content': content, 'media_urls': []}),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
   static Future<Map<String, dynamic>> deleteNotice(int id) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/notices/$id'),

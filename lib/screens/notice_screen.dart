@@ -20,6 +20,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
   bool _isLoading = false;
   String _role = 'user';
   String _myDisplayName = '';
+  int _myUserId = 0;
 
   @override
   void initState() {
@@ -34,11 +35,13 @@ class _NoticeScreenState extends State<NoticeScreen> {
         ApiClient.getRole(),
         ApiClient.getDisplayName(),
         ApiClient.getNotices(),
+        ApiClient.getUserId(),
       ]);
       setState(() {
         _role = (results[0] as String?) ?? 'user';
         _myDisplayName = (results[1] as String?) ?? '';
         _notices = results[2] as List;
+        _myUserId = (results[3] as int?) ?? 0;
       });
     } catch (e) {
       if (mounted) {
@@ -59,6 +62,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
           noticeId: notice['id'] as int,
           role: _role,
           myDisplayName: _myDisplayName,
+          myUserId: _myUserId,
           onDeleted: () async {
             await _loadData();
           },
@@ -191,6 +195,7 @@ class NoticeDetailScreen extends StatefulWidget {
   final int noticeId;
   final String role;
   final String myDisplayName;
+  final int myUserId;
   final Future<void> Function() onDeleted;
 
   const NoticeDetailScreen({
@@ -198,6 +203,7 @@ class NoticeDetailScreen extends StatefulWidget {
     required this.noticeId,
     required this.role,
     required this.myDisplayName,
+    required this.myUserId,
     required this.onDeleted,
   });
 
@@ -282,6 +288,22 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
     }
   }
 
+  Future<void> _editNotice() async {
+    if (_notice == null) return;
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _NoticeEditScreen(
+          noticeId: widget.noticeId,
+          initialTitle: _notice!['title'] as String? ?? '',
+          initialContent: _notice!['content'] as String? ?? '',
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+    if (result == true) await _load();
+  }
+
   Future<void> _deleteNotice() async {
     final canDelete = widget.role == 'admin' || widget.role == 'super_admin';
     if (!canDelete) return;
@@ -354,6 +376,8 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final canDelete = widget.role == 'admin' || widget.role == 'super_admin';
+    final isAuthor = _notice != null &&
+        (_notice!['author_id'] as int?) == widget.myUserId;
 
     return Scaffold(
       appBar: AppBar(
@@ -365,6 +389,12 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
             onPressed: _load,
             tooltip: '새로고침',
           ),
+          if (isAuthor)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: _loading ? null : _editNotice,
+              tooltip: '공지 수정',
+            ),
           if (canDelete)
             IconButton(
               icon: Icon(Icons.delete_outline, color: colorScheme.error),
@@ -960,6 +990,122 @@ class _NoticeCreateScreenState extends State<NoticeCreateScreen> {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── 공지사항 수정 화면 (풀스크린) ───────────────────────────────────────────
+class _NoticeEditScreen extends StatefulWidget {
+  final int noticeId;
+  final String initialTitle;
+  final String initialContent;
+
+  const _NoticeEditScreen({
+    required this.noticeId,
+    required this.initialTitle,
+    required this.initialContent,
+  });
+
+  @override
+  State<_NoticeEditScreen> createState() => _NoticeEditScreenState();
+}
+
+class _NoticeEditScreenState extends State<_NoticeEditScreen> {
+  late final TextEditingController _titleCtrl;
+  late final TextEditingController _contentCtrl;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleCtrl = TextEditingController(text: widget.initialTitle);
+    _contentCtrl = TextEditingController(text: widget.initialContent);
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _contentCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final title = _titleCtrl.text.trim();
+    final content = _contentCtrl.text.trim();
+    if (title.isEmpty || content.isEmpty || _saving) return;
+    setState(() => _saving = true);
+    try {
+      await ApiClient.updateNotice(
+        widget.noticeId,
+        title: title,
+        content: content,
+      );
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(friendlyError(e))),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('공지사항 수정'),
+        backgroundColor: colorScheme.primaryContainer,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('저장'),
+            ),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              controller: _titleCtrl,
+              decoration: const InputDecoration(
+                labelText: '제목',
+                border: OutlineInputBorder(),
+              ),
+              maxLength: 100,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: TextField(
+                controller: _contentCtrl,
+                decoration: const InputDecoration(
+                  labelText: '내용',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                maxLines: null,
+                expands: true,
+                maxLength: 5000,
+                textAlignVertical: TextAlignVertical.top,
+              ),
+            ),
           ],
         ),
       ),
