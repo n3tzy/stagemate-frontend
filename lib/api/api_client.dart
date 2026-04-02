@@ -618,6 +618,7 @@ class ApiClient {
     List<String> mediaUrls = const [],
     bool isGlobal = false,
     bool isAnonymous = false,
+    String? youtubeUrl,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/posts'),
@@ -627,6 +628,7 @@ class ApiClient {
         'media_urls': mediaUrls,
         'is_global': isGlobal,
         'is_anonymous': isAnonymous,
+        if (youtubeUrl != null) 'youtube_url': youtubeUrl,
       }),
     ).timeout(_timeout);
     return _parseResponse(response);
