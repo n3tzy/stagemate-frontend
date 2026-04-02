@@ -60,6 +60,31 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
     }
   }
 
+  Future<void> _regenerateInviteCode() async {
+    if (_clubId == null) return;
+    setState(() => _isLoadingCode = true);
+    try {
+      final data = await ApiClient.regenerateInviteCode(_clubId!);
+      if (mounted) {
+        setState(() => _inviteInfo = data);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('새 초대 코드가 발급되었습니다!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('코드 발급에 실패했어요. ${friendlyError(e)}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingCode = false);
+    }
+  }
+
   Future<void> _loadMembers() async {
     if (_clubId == null) return;
     setState(() => _isLoadingMembers = true);
@@ -526,7 +551,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
                                     child: FilledButton.icon(
                                       onPressed: _isLoadingCode
                                           ? null
-                                          : _loadInviteCode,
+                                          : _regenerateInviteCode,
                                       icon: const Icon(Icons.refresh, size: 16),
                                       label: const Text('새 코드 발급'),
                                     ),

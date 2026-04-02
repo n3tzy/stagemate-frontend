@@ -349,6 +349,14 @@ class ApiClient {
     return _parseResponse(response);
   }
 
+  static Future<Map<String, dynamic>> regenerateInviteCode(int clubId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/clubs/$clubId/invite-code/regenerate'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
   static Future<List<dynamic>> getMembers(int clubId) async {
     final response = await http.get(
       Uri.parse('$baseUrl/clubs/$clubId/members'),

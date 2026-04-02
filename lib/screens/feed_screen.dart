@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
+import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../api/api_client.dart';
@@ -308,38 +311,19 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
     });
   }
 
-  // ── 게시글 수정 다이얼로그 ─────────────────────────
+  // ── 게시글 수정 (풀스크린) ─────────────────────────
   Future<void> _showEditPostDialog(dynamic post, bool isGlobal) async {
-    final ctrl = TextEditingController(text: post['content'] as String? ?? '');
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('게시글 수정'),
-        content: TextField(
-          controller: ctrl,
-          maxLines: 6,
-          maxLength: 2000,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-          autofocus: true,
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _PostEditScreen(
+          postId: post['id'] as int,
+          initialContent: post['content'] as String? ?? '',
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('저장'),
-          ),
-        ],
+        fullscreenDialog: true,
       ),
     );
-    if (result != true) return;
-    try {
-      await ApiClient.updatePost(post['id'], ctrl.text.trim());
-      await _loadAll();
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
-      );
-    }
+    if (result == true) await _loadAll();
   }
 
   // ── 신고 다이얼로그 ──────────────────────────────
@@ -896,6 +880,37 @@ class _MediaViewerScreenState extends State<_MediaViewerScreen> {
     super.dispose();
   }
 
+  Future<void> _download() async {
+    final url = widget.urls[_currentIndex];
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(const SnackBar(
+      content: Text('다운로드 중...'),
+      duration: Duration(seconds: 60),
+    ));
+    try {
+      final response = await http.get(Uri.parse(url));
+      final ext = url.split('.').last.split('?').first.toLowerCase();
+      final isVideo = ['mp4', 'mov', 'webm', 'avi'].contains(ext);
+      if (isVideo) {
+        final ts = DateTime.now().millisecondsSinceEpoch;
+        final tempFile = File('${Directory.systemTemp.path}/dl_$ts.$ext');
+        await tempFile.writeAsBytes(response.bodyBytes);
+        await Gal.putVideo(tempFile.path);
+        await tempFile.delete();
+      } else {
+        await Gal.putImageBytes(response.bodyBytes);
+      }
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(const SnackBar(
+        content: Text('갤러리에 저장되었습니다!'),
+        backgroundColor: Colors.green,
+      ));
+    } catch (_) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(const SnackBar(content: Text('다운로드에 실패했어요.')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -912,6 +927,13 @@ class _MediaViewerScreenState extends State<_MediaViewerScreen> {
               )
             : null,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download_outlined, color: Colors.white),
+            onPressed: _download,
+            tooltip: '저장',
+          ),
+        ],
       ),
       body: PageView.builder(
         controller: _pageCtrl,
@@ -923,6 +945,92 @@ class _MediaViewerScreenState extends State<_MediaViewerScreen> {
               ? _VideoPage(url: url, isActive: i == _currentIndex)
               : _PhotoPage(url: url);
         },
+      ),
+    );
+  }
+}
+
+// ── 게시글 수정 풀스크린 ─────────────────────────────
+class _PostEditScreen extends StatefulWidget {
+  final int postId;
+  final String initialContent;
+  const _PostEditScreen({required this.postId, required this.initialContent});
+
+  @override
+  State<_PostEditScreen> createState() => _PostEditScreenState();
+}
+
+class _PostEditScreenState extends State<_PostEditScreen> {
+  late final TextEditingController _ctrl;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initialContent);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _isSaving = true);
+    try {
+      await ApiClient.updatePost(widget.postId, text);
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('게시글 수정'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton(
+              onPressed: _isSaving ? null : _save,
+              child: _isSaving
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('저장'),
+            ),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _ctrl,
+                maxLines: null,
+                expands: true,
+                maxLength: 2000,
+                autofocus: true,
+                textAlignVertical: TextAlignVertical.top,
+                decoration: const InputDecoration(
+                  hintText: '내용을 입력하세요...',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
