@@ -4,6 +4,7 @@ import 'package:gal/gal.dart';
 import 'package:http/http.dart' as http;
 import '../api/api_client.dart';
 import 'feed_screen.dart' show FeedUserAvatar;
+import '../widgets/media_viewer_screen.dart';
 
 class CommentsScreen extends StatefulWidget {
   final dynamic post;
@@ -636,29 +637,41 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       itemCount: (post['media_urls'] as List).length,
                       separatorBuilder: (_, __) => const SizedBox(width: 6),
                       itemBuilder: (_, i) {
-                        final url = (post['media_urls'] as List).cast<String>()[i];
-                        return Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(url, height: 200, fit: BoxFit.cover),
-                            ),
-                            Positioned(
-                              right: 4,
-                              bottom: 4,
-                              child: GestureDetector(
-                                onTap: () => _downloadMedia(context, url),
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black54,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Icon(Icons.download, color: Colors.white, size: 18),
-                                ),
+                        final urls = (post['media_urls'] as List).cast<String>();
+                        final url = urls[i];
+                        return GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MediaViewerScreen(
+                                urls: urls,
+                                initialIndex: i,
                               ),
                             ),
-                          ],
+                          ),
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(url, height: 200, fit: BoxFit.cover),
+                              ),
+                              Positioned(
+                                right: 4,
+                                bottom: 4,
+                                child: GestureDetector(
+                                  onTap: () => _downloadMedia(context, url),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Icon(Icons.download, color: Colors.white, size: 18),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),
