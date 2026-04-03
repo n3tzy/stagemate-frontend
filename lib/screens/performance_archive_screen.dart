@@ -170,7 +170,7 @@ class _PerformanceArchiveScreenState extends State<PerformanceArchiveScreen> {
                                 ),
                               ListTile(
                                 title: Text(a['title'] as String? ?? '',
-                                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    style: const TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.bold)),
                                 subtitle: Text(a['performance_date'] as String? ?? ''),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -206,6 +206,7 @@ class _PerformanceArchiveScreenState extends State<PerformanceArchiveScreen> {
                                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                                   child: Text(a['description'] as String,
                                       style: TextStyle(
+                                          fontFamily: 'AritaBuri',
                                           color: colorScheme.onSurfaceVariant,
                                           fontSize: 13)),
                                 ),
@@ -344,6 +345,7 @@ class _ArchiveAddScreenState extends State<_ArchiveAddScreen> {
           children: [
             TextField(
               controller: _titleCtrl,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               decoration: const InputDecoration(
                 labelText: '공연 제목 *',
                 border: OutlineInputBorder(),
@@ -360,12 +362,14 @@ class _ArchiveAddScreenState extends State<_ArchiveAddScreen> {
                   border: OutlineInputBorder(),
                   suffixIcon: Icon(Icons.calendar_today),
                 ),
-                child: Text('${_selectedDate.year}년 ${_selectedDate.month}월 ${_selectedDate.day}일'),
+                child: Text('${_selectedDate.year}년 ${_selectedDate.month}월 ${_selectedDate.day}일',
+                    style: const TextStyle(fontFamily: 'AritaBuri')),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _youtubeCtrl,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               decoration: const InputDecoration(
                 labelText: 'YouTube URL (선택)',
                 prefixIcon: Icon(Icons.link, color: Colors.red),
@@ -380,6 +384,7 @@ class _ArchiveAddScreenState extends State<_ArchiveAddScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _descCtrl,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               decoration: const InputDecoration(
                 labelText: '설명 (선택, 셋리스트 등)',
                 border: OutlineInputBorder(),

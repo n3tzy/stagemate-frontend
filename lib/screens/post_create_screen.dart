@@ -321,6 +321,7 @@ class _PostCreateScreenState extends State<PostCreateScreen> {
             // 내용 입력
             TextField(
               controller: _contentCtrl,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               maxLines: 10,
               maxLength: 2000,
               decoration: const InputDecoration(

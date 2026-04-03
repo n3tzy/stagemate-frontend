@@ -42,29 +42,9 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        // UI 전체(버튼·탭·메뉴·브랜딩): ZenSerif
-        // 게시글·공지 제목 + 본문 내용: 아리따 부리
+        // 전체 기본 폰트: ZenSerif (UI 버튼·탭·메뉴·브랜딩)
+        // 콘텐츠 영역(게시글·공지·댓글·입력칸)은 각 화면에서 AritaBuri 직접 적용
         fontFamily: 'ZenSerif',
-        textTheme: const TextTheme(
-          // 콘텐츠 제목 (게시글 제목, 공지 제목, 카드 제목 등) → 아리따 부리
-          headlineLarge:  TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w700),
-          headlineMedium: TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
-          headlineSmall:  TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
-          titleLarge:     TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
-          titleMedium:    TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w500),
-          titleSmall:     TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w400),
-          // 콘텐츠 본문 (게시글 내용, 공지 내용 등) → 아리따 부리
-          bodyLarge:      TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w400),
-          bodyMedium:     TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w400),
-          bodySmall:      TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w400),
-          // UI 크롬 (버튼, 탭, 칩, 레이블) → ZenSerif
-          displayLarge:   TextStyle(fontFamily: 'ZenSerif'),
-          displayMedium:  TextStyle(fontFamily: 'ZenSerif'),
-          displaySmall:   TextStyle(fontFamily: 'ZenSerif'),
-          labelLarge:     TextStyle(fontFamily: 'ZenSerif'),
-          labelMedium:    TextStyle(fontFamily: 'ZenSerif'),
-          labelSmall:     TextStyle(fontFamily: 'ZenSerif'),
-        ),
       ),
       builder: (context, child) {
         // 시스템 글꼴 크기 설정을 그대로 존중 (iOS/Android 접근성)

@@ -166,7 +166,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
                               Expanded(
                                 child: Text(
                                   notice['title'],
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: const TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.bold),
                                 ),
                               ),
                               if (hasMedia)
@@ -428,6 +428,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
                               Text(
                                 _notice!['title'] as String? ?? '',
                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontFamily: 'AritaBuri',
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -446,7 +447,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                           child: Text(
                             _notice!['content'] as String? ?? '',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.6),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'AritaBuri', height: 1.6),
                           ),
                         ),
                         // 미디어 (있을 때만)
@@ -915,6 +916,7 @@ class _NoticeCreateScreenState extends State<NoticeCreateScreen> {
             // 제목
             TextField(
               controller: _titleCtrl,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               decoration: const InputDecoration(
                 labelText: '제목',
                 hintText: '예: 2026 봄 공연 무대 순서 확정',
@@ -927,6 +929,7 @@ class _NoticeCreateScreenState extends State<NoticeCreateScreen> {
             // 내용
             TextField(
               controller: _contentCtrl,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               decoration: const InputDecoration(
                 labelText: '내용',
                 hintText: '공지 내용을 입력하세요',
