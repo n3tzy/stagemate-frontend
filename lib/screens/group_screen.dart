@@ -669,100 +669,162 @@ class _GroupScreenState extends State<GroupScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── 방 설정 ──
+            // ── 방 목록 칩 ──
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '방 설정',
+                      '내 방 목록',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _roomCodeController,
-                            style: const TextStyle(fontFamily: 'AritaBuri'),
-                            decoration: const InputDecoration(
-                              labelText: '방 코드',
-                              hintText: '예: DANCE2026',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.tag),
-                              suffixIcon: Tooltip(
-                                message: '방 코드는 팀 단위 코드예요.\n같은 팀원끼리 동일한 코드를 입력하면\n팀 스케줄을 함께 조율할 수 있어요.',
-                                triggerMode: TooltipTriggerMode.tap,
-                                showDuration: Duration(seconds: 5),
-                                child: Icon(Icons.info_outline),
-                              ),
+                    const SizedBox(height: 10),
+                    if (_savedCodes.isEmpty)
+                      Center(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 8),
+                            Icon(Icons.music_note, size: 36, color: colorScheme.outline),
+                            const SizedBox(height: 6),
+                            Text(
+                              '참여 중인 방이 없어요\n팀에서 공유받은 방 코드를 추가해보세요',
+                              style: TextStyle(color: colorScheme.outline, fontSize: 13),
+                              textAlign: TextAlign.center,
                             ),
-                          ),
+                            const SizedBox(height: 10),
+                            FilledButton.icon(
+                              onPressed: _showAddCodeDialog,
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('방 코드 추가'),
+                            ),
+                            const SizedBox(height: 4),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        FilledButton.tonal(
-                          onPressed: _loadAvailability,
-                          child: const Text('조회'),
+                      )
+                    else
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            ..._savedCodes.map((code) {
+                              final isActive = code == _activeCode;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: InputChip(
+                                  label: Text(
+                                    code,
+                                    style: TextStyle(
+                                      color: isActive
+                                          ? colorScheme.onPrimary
+                                          : colorScheme.onSurface,
+                                      fontWeight: isActive
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  selected: isActive,
+                                  backgroundColor: colorScheme.surfaceContainerHighest,
+                                  selectedColor: colorScheme.primary,
+                                  showCheckmark: false,
+                                  onPressed: () => _switchCode(code),
+                                  onDeleted: () => _confirmDeleteCode(code),
+                                  deleteIcon: Icon(
+                                    Icons.close,
+                                    size: 16,
+                                    color: isActive
+                                        ? colorScheme.onPrimary.withValues(alpha: 0.8)
+                                        : colorScheme.outline,
+                                  ),
+                                ),
+                              );
+                            }),
+                            ActionChip(
+                              avatar: Icon(Icons.add, size: 16, color: colorScheme.outline),
+                              label: Text(
+                                '추가',
+                                style: TextStyle(color: colorScheme.outline, fontSize: 13),
+                              ),
+                              backgroundColor: Colors.transparent,
+                              side: BorderSide(color: colorScheme.outline, width: 1),
+                              onPressed: _showAddCodeDialog,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '필요 연습 시간: ${_durationNeeded.toStringAsFixed(1)}시간',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Slider(
-                      value: _durationNeeded,
-                      min: 0.5,
-                      max: 6.0,
-                      divisions: 11,
-                      label: '${_durationNeeded.toStringAsFixed(1)}시간',
-                      onChanged: (val) {
-                        setState(() {
-                          _durationNeeded = val;
-                          _result = null;
-                        });
-                      },
-                    ),
+                      ),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 8),
+
+            // ── 필요 연습 시간 슬라이더 ──
+            if (_savedCodes.isNotEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '필요 연습 시간: ${_durationNeeded.toStringAsFixed(1)}시간',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Slider(
+                        value: _durationNeeded,
+                        min: 0.5,
+                        max: 6.0,
+                        divisions: 11,
+                        label: '${_durationNeeded.toStringAsFixed(1)}시간',
+                        onChanged: (val) {
+                          setState(() {
+                            _durationNeeded = val;
+                            _result = null;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             const SizedBox(height: 12),
 
             // ── 내 연습 가능한 시간대 추가 버튼 ──
-            FilledButton.icon(
-              onPressed: _isSaving
-                  ? null
-                  : () {
-                      if (_roomCodeController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('방 코드를 먼저 입력해 주세요')),
-                        );
-                        return;
-                      }
-                      _showAddSlotDialog();
-                    },
-              icon: const Icon(Icons.add),
-              label: Text('내 연습 가능한 시간대 추가 ($_myDisplayName)'),
-            ),
-            const SizedBox(height: 16),
+            if (_savedCodes.isNotEmpty)
+              FilledButton.icon(
+                onPressed: _isSaving
+                    ? null
+                    : () {
+                        if (_activeCode == null || _activeCode!.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('방 코드를 먼저 추가해 주세요')),
+                          );
+                          return;
+                        }
+                        _showAddSlotDialog();
+                      },
+                icon: const Icon(Icons.add),
+                label: Text('내 연습 가능한 시간대 추가 ($_myDisplayName)'),
+              ),
 
-            // ── 멤버별 연습 가능한 시간대 목록 ──
-            Text(
-              '멤버 연습 가능한 시간대 (${_memberSlots.length}명 등록)',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
+            if (_savedCodes.isNotEmpty) ...[
+              const SizedBox(height: 16),
 
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator())
+              // ── 멤버별 연습 가능한 시간대 목록 ──
+              Text(
+                '멤버 연습 가능한 시간대 (${_memberSlots.length}명 등록)',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
+
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator())
             else if (_memberSlots.isEmpty)
               Card(
                 child: Padding(
@@ -915,23 +977,24 @@ class _GroupScreenState extends State<GroupScreen> {
                 );
               }),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // ── 공통 시간 찾기 버튼 ──
-            FilledButton.icon(
-              onPressed: _isLoading ? null : _findCommonSlots,
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.search),
-              label: Text(_isLoading ? '찾는 중...' : '공통 시간 찾기'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+              // ── 공통 시간 찾기 버튼 ──
+              FilledButton.icon(
+                onPressed: _isLoading ? null : _findCommonSlots,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.search),
+                label: Text(_isLoading ? '찾는 중...' : '공통 시간 찾기'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
-            ),
+            ], // if (_savedCodes.isNotEmpty)
 
             // ── 결과 섹션 ──
             if (_result != null) ...[
