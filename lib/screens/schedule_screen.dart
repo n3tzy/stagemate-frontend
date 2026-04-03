@@ -144,7 +144,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               children: [
                 TextField(
                   controller: titleController,
-                  style: const TextStyle(fontFamily: 'AritaBuri'),
                   decoration: const InputDecoration(
                     labelText: '곡 제목',
                     hintText: '예: Dynamite',
@@ -154,7 +153,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: membersController,
-                  style: const TextStyle(fontFamily: 'AritaBuri'),
                   decoration: const InputDecoration(
                     labelText: '참여 멤버',
                     hintText: '쉼표로 구분: 민수, 지혜, 현아',

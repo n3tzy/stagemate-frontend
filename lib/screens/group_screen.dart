@@ -530,7 +530,6 @@ class _GroupScreenState extends State<GroupScreen> {
                         Expanded(
                           child: TextField(
                             controller: _roomCodeController,
-                            style: const TextStyle(fontFamily: 'AritaBuri'),
                             decoration: const InputDecoration(
                               labelText: '방 코드',
                               hintText: '예: DANCE2026',
