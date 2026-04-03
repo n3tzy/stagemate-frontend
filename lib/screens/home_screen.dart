@@ -1243,9 +1243,11 @@ class _ClubSwitcherSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    // 커스텀 네비게이션 바(72px)가 Scaffold body 내부에 있어서
+    // showModalBottomSheet가 높이를 인지 못하고 겹침 → 직접 패딩 추가
+    final systemBottom = MediaQuery.of(context).padding.bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + 72 + systemBottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1369,7 +1371,6 @@ class _ClubSwitcherSheet extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }
