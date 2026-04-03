@@ -596,15 +596,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   OutlinedButton.icon(
                     onPressed: () async {
                       final path = await ExcelExporter.exportSchedule(_result!);
-                      if (path != null && mounted) {
+                      if (!mounted) return;
+                      if (path == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('저장되었어요: ${path.split(Platform.pathSeparator).last}'),
-                            duration: const Duration(seconds: 4),
+                          const SnackBar(
+                            content: Text('파일 저장에 실패했어요.'),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
+                        return;
                       }
+                      // 모바일: 공유 시트가 열렸으므로 간단한 안내만 표시
+                      // 데스크탑: 저장 경로 표시
+                      final isDesktop = !Platform.isAndroid && !Platform.isIOS;
+                      final msg = isDesktop
+                          ? '저장됨: ${path.split(Platform.pathSeparator).last}'
+                          : '엑셀 파일을 공유 시트에서 저장하세요 📂';
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(msg),
+                          duration: const Duration(seconds: 4),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
                     },
                     icon: const Icon(Icons.download, size: 16),
                     label: const Text('엑셀'),

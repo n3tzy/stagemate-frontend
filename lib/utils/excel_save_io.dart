@@ -1,48 +1,54 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'download_notification.dart';
+import 'package:share_plus/share_plus.dart';
 
-/// 비웹 전용 (Windows / Android / iOS / macOS / Linux):
-/// 파일을 저장하고 경로를 반환
-/// 반환값: 저장된 절대 경로 (실패 시 null)
+/// 비웹 전용 (Android / iOS / Windows / macOS / Linux)
+///
+/// - 모바일(Android / iOS): 임시 파일 생성 후 네이티브 공유 시트 표시
+///   → iOS "파일에 저장" / Android "Downloads 저장" 등 사용자가 직접 선택
+/// - 데스크탑(Windows / macOS / Linux): ~/Downloads 또는 ~/Documents에 직접 저장
+///
+/// 반환값: 저장 또는 공유에 성공하면 임시 파일 경로, 실패 시 null
 Future<String?> saveExcelFile(List<int> bytes, String fileName) async {
   try {
     final sep = Platform.pathSeparator;
-    String savePath;
 
-    if (Platform.isAndroid) {
-      // Android 10+(scoped storage): /storage/emulated/0/Download 에 직접 쓰면
-      // MediaStore 인덱싱이 안 돼 파일 앱에서 보이지 않는 문제가 있음.
-      // → 앱 전용 외부 디렉토리에 저장하고 즉시 open_file로 열어주는 방식으로 처리.
-      final dir = await getExternalStorageDirectory() ??
-          await getApplicationDocumentsDirectory();
-      savePath = dir.path;
-    } else if (Platform.isIOS) {
-      final dir = await getApplicationDocumentsDirectory();
-      savePath = dir.path;
-    } else {
-      // Windows / macOS / Linux
-      final home = Platform.environment['USERPROFILE'] ?? // Windows
-                   Platform.environment['HOME'] ??         // macOS / Linux
-                   Directory.systemTemp.path;
-      savePath = '$home${sep}Downloads';
+    // ── 모바일: 임시 디렉토리에 쓰고 공유 시트로 내보내기 ──────────────
+    if (Platform.isAndroid || Platform.isIOS) {
+      final dir = await getTemporaryDirectory();
+      final filePath = '${dir.path}$sep$fileName';
+      await File(filePath).writeAsBytes(bytes, flush: true);
+
+      await Share.shareXFiles(
+        [
+          XFile(
+            filePath,
+            mimeType:
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            name: fileName,
+          )
+        ],
+        subject: fileName,
+      );
+
+      return filePath;
+    }
+
+    // ── 데스크탑: ~/Downloads 또는 ~/Documents에 직접 저장 ─────────────
+    final home = Platform.environment['USERPROFILE'] ?? // Windows
+        Platform.environment['HOME'] ?? // macOS / Linux
+        Directory.systemTemp.path;
+
+    String savePath = '$home${sep}Downloads';
+    if (!Directory(savePath).existsSync()) {
+      savePath = '$home${sep}Documents';
       if (!Directory(savePath).existsSync()) {
-        savePath = '$home${sep}Documents';
-        if (!Directory(savePath).existsSync()) {
-          savePath = Directory.systemTemp.path;
-        }
+        savePath = Directory.systemTemp.path;
       }
     }
 
     final filePath = '$savePath$sep$fileName';
-    await File(filePath).writeAsBytes(bytes);
-
-    // 알림 표시 (비동기, 실패해도 무시)
-    showDownloadNotification(
-      filePath: filePath,
-      fileName: fileName,
-    ).catchError((_) {});
-
+    await File(filePath).writeAsBytes(bytes, flush: true);
     return filePath;
   } catch (e) {
     return null;
