@@ -198,8 +198,9 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
     final screenSize = MediaQuery.of(context).size;
     final topPadding = MediaQuery.of(context).padding.top;
 
-    // 말풍선 위치 결정: 요소가 화면 하반부면 위에, 상반부면 아래에
-    final bubbleFromBottom = _calcBubblePosition(elementRect, navRect, screenSize);
+    // 말풍선 위치: 요소 주변 여유 공간을 비교해서 넓은 쪽에 배치
+    final (useTop, posValue) = _bubbleLayout(
+        elementRect, navRect, screenSize, topPadding);
 
     return FadeTransition(
       opacity: _fadeAnim,
@@ -247,9 +248,10 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
               ),
             ),
 
-            // 말풍선 카드
+            // 말풍선 카드 — 위/아래 동적 배치
             Positioned(
-              bottom: bubbleFromBottom,
+              top: useTop ? posValue : null,
+              bottom: useTop ? null : posValue,
               left: 16,
               right: 16,
               child: _BubbleCard(
@@ -266,21 +268,32 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
     );
   }
 
-  double _calcBubblePosition(Rect? elementRect, Rect? navRect, Size screenSize) {
-    // 기준 요소 우선순위: 화면 요소 > 탭 바
-    final ref = elementRect ?? navRect;
-    if (ref == null) return 120;
+  /// 말풍선 위치 계산
+  /// 반환: (useTop, value)
+  ///   useTop=true  → Positioned(top: value)    : 요소 아래에 말풍선
+  ///   useTop=false → Positioned(bottom: value) : 요소 위에 말풍선
+  (bool useTop, double value) _bubbleLayout(
+      Rect? elementRect, Rect? navRect, Size screenSize, double topPadding) {
+    // 네비게이션 바 상단 (말풍선이 침범하면 안 되는 경계)
+    final navTop = navRect?.top ?? (screenSize.height - 80);
+    // 앱바 아래 (상태바 + 앱바 ≈ topPadding + 56)
+    final safeTop = topPadding + 56.0;
+    const gap = 14.0;
 
-    final elementCenter = ref.center.dy;
-    final screenMid = screenSize.height / 2;
+    if (elementRect == null) {
+      // 요소 없음 → 탭 바 바로 위
+      return (false, screenSize.height - navTop + gap);
+    }
 
-    if (elementCenter > screenMid) {
-      // 요소가 하반부 → 말풍선을 위에 (bottom = screenHeight - elementTop + padding)
-      return screenSize.height - ref.top + 16;
+    final spaceAbove = elementRect.top - safeTop;
+    final spaceBelow = navTop - elementRect.bottom;
+
+    if (spaceAbove >= spaceBelow) {
+      // 위쪽 공간이 더 넓음 → 요소 위에 말풍선 (bottom 기준)
+      return (false, screenSize.height - elementRect.top + gap);
     } else {
-      // 요소가 상반부 → 말풍선을 탭 바 위쪽에 (네비게이션 바 높이 고려)
-      final navBottom = navRect?.bottom ?? (screenSize.height - 80);
-      return screenSize.height - navBottom + 16;
+      // 아래쪽 공간이 더 넓음 → 요소 아래에 말풍선 (top 기준)
+      return (true, elementRect.bottom + gap);
     }
   }
 }

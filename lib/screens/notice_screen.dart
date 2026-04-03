@@ -26,17 +26,20 @@ class _NoticeScreenState extends State<NoticeScreen> {
   int _myUserId = 0;
 
   final _obWriteKey = GlobalKey();
+  final _obEmptyWriteKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
     onboardingKeys['ob_notice_write'] = _obWriteKey;
+    onboardingKeys['ob_notice_empty_write'] = _obEmptyWriteKey;
     _loadData();
   }
 
   @override
   void dispose() {
     onboardingKeys.remove('ob_notice_write');
+    onboardingKeys.remove('ob_notice_empty_write');
     super.dispose();
   }
 
@@ -141,6 +144,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
                       if (_role == 'admin' || _role == 'super_admin') ...[
                         const SizedBox(height: 16),
                         FilledButton.icon(
+                          key: _obEmptyWriteKey,
                           onPressed: _openCreate,
                           icon: const Icon(Icons.add),
                           label: const Text('첫 공지사항 작성하기'),

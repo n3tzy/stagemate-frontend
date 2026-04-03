@@ -33,7 +33,7 @@ const List<OnboardingStep> kOnboardingSteps = [
     title: '공지사항',
     description: '임원진이 올린 중요한 공지를 확인할 수 있어요. 오른쪽 위 [작성] 버튼으로 공지를 올려보세요.',
     isFaIcon: true,
-    spotlightKeys: ['ob_notice_write'],
+    spotlightKeys: ['ob_notice_write', 'ob_notice_empty_write'],
   ),
   OnboardingStep(
     menuKey: 'feed',
