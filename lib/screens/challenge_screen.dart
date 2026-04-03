@@ -29,13 +29,13 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   @override
   void initState() {
     super.initState();
+    onboardingKeyRegTotal++;
     onboardingKeys['ob_challenge_submit'] = _obSubmitKey;
     _load();
   }
 
   @override
   void dispose() {
-    onboardingKeys.remove('ob_challenge_submit');
     super.dispose();
   }
 

@@ -27,13 +27,13 @@ class _PerformanceArchiveScreenState extends State<PerformanceArchiveScreen> {
   @override
   void initState() {
     super.initState();
+    onboardingKeyRegTotal++;
     onboardingKeys['ob_archive_add'] = _obAddKey;
     _load();
   }
 
   @override
   void dispose() {
-    onboardingKeys.remove('ob_archive_add');
     super.dispose();
   }
 

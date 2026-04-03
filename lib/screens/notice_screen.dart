@@ -31,6 +31,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
   @override
   void initState() {
     super.initState();
+    onboardingKeyRegTotal++;
     onboardingKeys['ob_notice_write'] = _obWriteKey;
     onboardingKeys['ob_notice_empty_write'] = _obEmptyWriteKey;
     _loadData();
@@ -38,8 +39,6 @@ class _NoticeScreenState extends State<NoticeScreen> {
 
   @override
   void dispose() {
-    onboardingKeys.remove('ob_notice_write');
-    onboardingKeys.remove('ob_notice_empty_write');
     super.dispose();
   }
 

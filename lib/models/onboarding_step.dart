@@ -31,9 +31,9 @@ const List<OnboardingStep> kOnboardingSteps = [
   OnboardingStep(
     menuKey: 'notice',
     title: '공지사항',
-    description: '임원진이 올린 중요한 공지를 확인할 수 있어요. 오른쪽 위 [작성] 버튼으로 공지를 올려보세요.',
+    description: '임원진이 올린 중요한 공지를 확인할 수 있어요. 아래 버튼으로 첫 공지를 작성해보세요!',
     isFaIcon: true,
-    spotlightKeys: ['ob_notice_write', 'ob_notice_empty_write'],
+    spotlightKeys: ['ob_notice_empty_write'],
   ),
   OnboardingStep(
     menuKey: 'feed',
@@ -67,7 +67,7 @@ const List<OnboardingStep> kOnboardingSteps = [
   OnboardingStep(
     menuKey: 'group',
     title: '스케줄 조율',
-    description: '팀원들의 가능한 시간대를 모아 최적의 연습 시간을 찾아줘요. 먼저 방 코드를 추가해보세요!',
+    description: '팀원들의 가능한 시간대를 모아 최적의 연습 시간을 찾아줘요. 먼저 팀 코드를 추가해보세요!',
     materialIcon: Icons.group,
     spotlightKeys: ['ob_group_add_code'],
   ),

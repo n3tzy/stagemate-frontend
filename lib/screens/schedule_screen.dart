@@ -24,14 +24,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   void initState() {
     super.initState();
+    onboardingKeyRegTotal++;
     onboardingKeys['ob_schedule_add_song'] = _obAddSongKey;
     onboardingKeys['ob_schedule_optimize'] = _obOptimizeKey;
   }
 
   @override
   void dispose() {
-    onboardingKeys.remove('ob_schedule_add_song');
-    onboardingKeys.remove('ob_schedule_optimize');
     super.dispose();
   }
 

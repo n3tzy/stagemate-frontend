@@ -402,6 +402,7 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
+    onboardingKeyRegTotal++;
     onboardingKeys['ob_booking_add'] = _obAddKey;
     _loadMyInfo();
     _loadBookings();
@@ -409,7 +410,6 @@ class _BookingScreenState extends State<BookingScreen> {
 
   @override
   void dispose() {
-    onboardingKeys.remove('ob_booking_add');
     super.dispose();
   }
 

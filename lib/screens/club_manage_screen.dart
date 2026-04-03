@@ -29,6 +29,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
   @override
   void initState() {
     super.initState();
+    onboardingKeyRegTotal++;
     onboardingKeys['ob_club_plan'] = _obPlanKey;
     onboardingKeys['ob_club_invite'] = _obInviteKey;
     _loadAll();
@@ -36,8 +37,6 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
 
   @override
   void dispose() {
-    onboardingKeys.remove('ob_club_plan');
-    onboardingKeys.remove('ob_club_invite');
     super.dispose();
   }
 

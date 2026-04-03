@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../models/onboarding_step.dart';
@@ -55,6 +57,48 @@ class _SpotlightPainter extends CustomPainter {
       old.elementRect != elementRect || old.navRect != navRect;
 }
 
+// ── 화살표 페인터 (말풍선 → 스포트라이트 연결) ──────────────────────
+class _ArrowPainter extends CustomPainter {
+  final bool pointingUp; // true: ▲ (말풍선 위쪽), false: ▼ (말풍선 아래쪽)
+
+  const _ArrowPainter({required this.pointingUp});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _buildPath(size);
+
+    // 그림자 (살짝 블러)
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.18)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    // 흰색 채우기 (카드와 동일한 색)
+    canvas.drawPath(path, Paint()..color = Colors.white);
+  }
+
+  Path _buildPath(Size s) {
+    final path = Path();
+    if (pointingUp) {
+      // ▲: 위 꼭짓점 → 좌하단 → 우하단
+      path.moveTo(s.width / 2, 0);
+      path.lineTo(0, s.height);
+      path.lineTo(s.width, s.height);
+    } else {
+      // ▼: 좌상단 → 우상단 → 아래 꼭짓점
+      path.moveTo(0, 0);
+      path.lineTo(s.width, 0);
+      path.lineTo(s.width / 2, s.height);
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(_ArrowPainter old) => old.pointingUp != pointingUp;
+}
+
 // ── SpotlightOverlay ─────────────────────────────────────────────
 class SpotlightOverlay extends StatefulWidget {
   final List<String> tabKeys;
@@ -84,6 +128,9 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
   int _currentStep = 0;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
+  Timer? _positionTimer;
+  // rect 확인 전에는 버블 카드를 숨겨 "이중 노출" 방지
+  bool _bubbleVisible = false;
 
   @override
   void initState() {
@@ -109,6 +156,7 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
 
   @override
   void dispose() {
+    _positionTimer?.cancel();
     _animController.dispose();
     widget.navScrollController?.removeListener(_onNavScroll);
     super.dispose();
@@ -120,14 +168,54 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
 
   void _navigateToStep(int stepIndex) {
     if (stepIndex >= _steps.length) return;
+    _positionTimer?.cancel();
+    _bubbleVisible = false; // 스텝 이동 시 버블 숨김 (버튼 확인 전까지)
+
     final menuKey = _steps[stepIndex].menuKey;
     final tabIndex = widget.tabKeys.indexOf(menuKey);
     if (tabIndex >= 0) {
       widget.onNavigate(tabIndex);
       _scrollNavToTab(tabIndex);
     }
-    // IndexedStack이므로 바로 setState (모든 화면이 이미 mounted)
-    if (mounted) setState(() {});
+    // 1단계: 초기 프레임 기반 빠른 재시도 (최대 30프레임)
+    //   버튼이 즉시 트리에 있으면 바로 버블 표시
+    //   없으면 → 2단계 타이머에게 위임 (버블 미표시 유지)
+    _retryReadPosition(30, stepIndex);
+    // 2단계: 100ms 간격 타이머 — API 로드 완료 후 버튼 찾히면 즉시 버블 표시
+    _positionTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (!mounted || _currentStep != stepIndex) {
+        timer.cancel();
+        return;
+      }
+      final rect = _elementRect();
+      if (rect != null) {
+        timer.cancel();
+        setState(() => _bubbleVisible = true);
+      }
+    });
+    // 15초 후에도 버튼 못 찾으면 nav 폴백으로 버블 표시 (무한 대기 방지)
+    Future.delayed(const Duration(seconds: 15), () {
+      if (mounted && _currentStep == stepIndex && !_bubbleVisible) {
+        _positionTimer?.cancel();
+        setState(() => _bubbleVisible = true);
+      }
+    });
+  }
+
+  /// elementRect를 찾을 때까지 매 프레임 재시도 (빠른 초기 반응용)
+  /// 찾으면 즉시 버블 표시.
+  /// 30프레임 후에도 없으면 → 타이머가 이어받으므로 여기서는 아무것도 안 함.
+  void _retryReadPosition(int remaining, int stepIndex) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _currentStep != stepIndex) return;
+      final rect = _elementRect();
+      if (rect != null) {
+        setState(() => _bubbleVisible = true); // 찾음 → 버블 즉시 표시
+      } else if (remaining > 1) {
+        _retryReadPosition(remaining - 1, stepIndex); // 다음 프레임 재시도
+      }
+      // remaining == 1이고 rect == null: 타이머에게 위임, 버블 숨김 유지
+    });
   }
 
   void _scrollNavToTab(int tabIndex) {
@@ -150,7 +238,10 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
   void _next() {
     if (_currentStep < _steps.length - 1) {
       _animController.forward(from: 0);
-      setState(() => _currentStep++);
+      setState(() {
+        _currentStep++;
+        _bubbleVisible = false; // 다음 스텝 버블 숨김 (rect 재확인 전까지)
+      });
       _navigateToStep(_currentStep);
     } else {
       widget.onDone();
@@ -198,9 +289,23 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
     final screenSize = MediaQuery.of(context).size;
     final topPadding = MediaQuery.of(context).padding.top;
 
+    // elementRect 없으면 navRect을 주 스포트라이트로 폴백
+    final effectiveElementRect = elementRect ?? (navRect != null
+        ? navRect.inflate(6) // nav tab을 약간 크게 강조
+        : null);
+
     // 말풍선 위치: 요소 주변 여유 공간을 비교해서 넓은 쪽에 배치
     final (useTop, posValue) = _bubbleLayout(
-        elementRect, navRect, screenSize, topPadding);
+        effectiveElementRect, navRect, screenSize, topPadding);
+
+    // 화살표 수평 위치: 카드 왼쪽 끝(left=16)을 기준으로 한 offset
+    // effectiveElementRect 중심이 화살표 꼭짓점이 되도록
+    const cardInset = 16.0;
+    const arrowW = 20.0;
+    final double? arrowLeft = effectiveElementRect != null
+        ? (effectiveElementRect.center.dx - cardInset)
+            .clamp(arrowW / 2, screenSize.width - 2 * cardInset - arrowW / 2)
+        : null;
 
     return FadeTransition(
       opacity: _fadeAnim,
@@ -212,8 +317,9 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
             CustomPaint(
               size: screenSize,
               painter: _SpotlightPainter(
-                elementRect: elementRect,
-                navRect: navRect,
+                elementRect: effectiveElementRect,
+                // elementRect가 없어서 navRect을 폴백으로 썼다면 보조 구멍은 표시 안 함
+                navRect: elementRect != null ? navRect : null,
               ),
             ),
 
@@ -248,20 +354,40 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
               ),
             ),
 
-            // 말풍선 카드 — 위/아래 동적 배치
-            Positioned(
-              top: useTop ? posValue : null,
-              bottom: useTop ? null : posValue,
-              left: 16,
-              right: 16,
-              child: _BubbleCard(
-                step: step,
-                isLast: isLast,
-                onNext: _next,
-                onDone: _finish,
-                colorScheme: colorScheme,
+            // 말풍선 카드 — rect 확인 후에만 표시 (이중 노출 방지)
+            if (_bubbleVisible)
+              Positioned(
+                top: useTop ? posValue : null,
+                bottom: useTop ? null : posValue,
+                left: cardInset,
+                right: cardInset,
+                child: _BubbleCard(
+                  step: step,
+                  isLast: isLast,
+                  onNext: _next,
+                  onDone: _finish,
+                  colorScheme: colorScheme,
+                  arrowPointsUp: useTop,
+                  arrowLeft: arrowLeft,
+                ),
               ),
-            ),
+
+            // rect 확인 중 로딩 인디케이터
+            if (!_bubbleVisible)
+              Positioned(
+                bottom: (navRect?.top ?? screenSize.height - 80) / 2 - 20,
+                left: 0, right: 0,
+                child: const Center(
+                  child: SizedBox(
+                    width: 28, height: 28,
+                    child: CircularProgressIndicator(
+                      color: Colors.white54,
+                      strokeWidth: 2.5,
+                    ),
+                  ),
+                ),
+              ),
+
           ],
         ),
       ),
@@ -281,8 +407,9 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
     const gap = 14.0;
 
     if (elementRect == null) {
-      // 요소 없음 → 탭 바 바로 위
-      return (false, screenSize.height - navTop + gap);
+      // 요소를 찾을 수 없으면 앱바-네비바 사이 중앙에 배치
+      final safeAreaMid = (safeTop + navTop) / 2;
+      return (true, (safeAreaMid - 80.0).clamp(safeTop, navTop - 80.0));
     }
 
     final spaceAbove = elementRect.top - safeTop;
@@ -298,13 +425,18 @@ class _SpotlightOverlayState extends State<SpotlightOverlay>
   }
 }
 
-// ── 말풍선 카드 ──────────────────────────────────────────────────
+// ── 말풍선 카드 (화살표 포함) ────────────────────────────────────────
 class _BubbleCard extends StatelessWidget {
   final OnboardingStep step;
   final bool isLast;
   final VoidCallback onNext;
   final VoidCallback onDone;
   final ColorScheme colorScheme;
+  /// true  → 화살표가 카드 상단에서 위를 가리킴 (▲)
+  /// false → 화살표가 카드 하단에서 아래를 가리킴 (▼)
+  final bool arrowPointsUp;
+  /// 카드 왼쪽 기준 화살표 꼭짓점 x 위치. null이면 화살표 없음.
+  final double? arrowLeft;
 
   const _BubbleCard({
     required this.step,
@@ -312,11 +444,18 @@ class _BubbleCard extends StatelessWidget {
     required this.onNext,
     required this.onDone,
     required this.colorScheme,
+    this.arrowPointsUp = true,
+    this.arrowLeft,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    const arrowH = 10.0;
+    const arrowW = 20.0;
+    // 화살표 밑단이 카드 모서리와 살짝 겹쳐 이음새가 자연스럽게 보임
+    const arrowOverlap = 2.0;
+
+    final cardBody = Material(
       color: Colors.transparent,
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -343,12 +482,14 @@ class _BubbleCard extends StatelessWidget {
                 else if (step.materialIcon != null)
                   Icon(step.materialIcon, color: colorScheme.primary, size: 18),
                 const SizedBox(width: 8),
-                Text(
-                  step.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: colorScheme.onSurface,
+                Expanded(
+                  child: Text(
+                    step.title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ],
@@ -387,6 +528,39 @@ class _BubbleCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    // 화살표 없으면 카드만 반환
+    if (arrowLeft == null) return cardBody;
+
+    // 화살표 꼭짓점 x (카드 기준) — 너무 끝으로 가지 않도록 clamp
+    final tipX = arrowLeft!.clamp(arrowW / 2, double.infinity) - arrowW / 2;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // 카드: 화살표 공간만큼 패딩 추가 (overlap으로 이음새 자연스럽게)
+        Padding(
+          padding: EdgeInsets.only(
+            top: arrowPointsUp ? arrowH - arrowOverlap : 0,
+            bottom: arrowPointsUp ? 0 : arrowH - arrowOverlap,
+          ),
+          child: cardBody,
+        ),
+        // 화살표 삼각형
+        Positioned(
+          top: arrowPointsUp ? 0 : null,
+          bottom: arrowPointsUp ? null : 0,
+          left: tipX,
+          child: SizedBox(
+            width: arrowW,
+            height: arrowH,
+            child: CustomPaint(
+              painter: _ArrowPainter(pointingUp: arrowPointsUp),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

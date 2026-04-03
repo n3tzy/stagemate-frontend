@@ -1064,9 +1064,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                   ),
+                  // isScrollControlled: true → 시트 높이 제한 없음 (스크롤 가능)
+                  isScrollControlled: true,
                   builder: (_) => _ClubSwitcherSheet(
                     clubs: widget.clubs,
                     currentClubId: _currentClubId,
+                    // 커스텀 네비바(72px) + 시스템 하단 여백을 외부 context에서
+                    // 미리 계산해서 넘김 → 시트 내부 SafeArea 의존 없이 확실하게 처리
+                    navBarClearance: MediaQuery.of(context).viewPadding.bottom + 72.0,
                     onSelect: (club) async {
                       await ApiClient.setClubInfo(
                         (club['club_id'] as num).toInt(),
@@ -1223,12 +1228,15 @@ class _ClubSwitcherSheet extends StatelessWidget {
   final int currentClubId;
   final Future<void> Function(Map<String, dynamic> club) onSelect;
   final VoidCallback? onAddClub;
+  /// 커스텀 네비바 + 시스템 하단 여백 합산값 (외부에서 계산해서 주입)
+  final double navBarClearance;
 
   const _ClubSwitcherSheet({
     required this.clubs,
     required this.currentClubId,
     required this.onSelect,
     this.onAddClub,
+    required this.navBarClearance,
   });
 
   String _roleLabel(String role) {
@@ -1243,9 +1251,16 @@ class _ClubSwitcherSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return SafeArea(
+    // SafeArea 대신 navBarClearance를 bottom padding에 직접 적용
+    // SingleChildScrollView → 동아리가 많아도 스크롤 가능
+    return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 12,
+          bottom: 12 + navBarClearance,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

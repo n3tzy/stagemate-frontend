@@ -36,6 +36,7 @@ class _GroupScreenState extends State<GroupScreen> {
   @override
   void initState() {
     super.initState();
+    onboardingKeyRegTotal++;
     onboardingKeys['ob_group_add_code'] = _obAddCodeKey;
     // _loadCodes 완료 후 _loadMyInfo → _loadMyInfo 내부의 _loadAvailability가
     // 이미 설정된 _roomCodeController.text 를 사용 (중복 호출 없음)
@@ -44,7 +45,6 @@ class _GroupScreenState extends State<GroupScreen> {
 
   @override
   void dispose() {
-    onboardingKeys.remove('ob_group_add_code');
     _roomCodeController.dispose();
     super.dispose();
   }
@@ -103,7 +103,7 @@ class _GroupScreenState extends State<GroupScreen> {
     if (_savedCodes.contains(trimmed)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이미 추가된 방코드예요.')),
+          const SnackBar(content: Text('이미 추가된 팀코드예요.')),
         );
       }
       await _switchCode(trimmed);
@@ -144,12 +144,12 @@ class _GroupScreenState extends State<GroupScreen> {
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('방 코드 추가'),
+        title: const Text('팀 코드 추가'),
         content: TextField(
           controller: ctrl,
           autofocus: true,
           decoration: const InputDecoration(
-            labelText: '방 코드',
+            labelText: '팀 코드',
             hintText: '예: DANCE2026',
             border: OutlineInputBorder(),
             prefixIcon: Icon(Icons.tag),
@@ -178,7 +178,7 @@ class _GroupScreenState extends State<GroupScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('방 코드 삭제'),
+        title: const Text('팀 코드 삭제'),
         content: Text('"$code" 를 목록에서 삭제할까요?'),
         actions: [
           TextButton(
@@ -265,7 +265,7 @@ class _GroupScreenState extends State<GroupScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '방 코드: ${_roomCodeController.text.trim()}',
+                      '팀 코드: ${_roomCodeController.text.trim()}',
                       style: TextStyle(
                         fontFamily: 'AritaBuri',
                         color: Theme.of(ctx).colorScheme.primary,
@@ -389,7 +389,7 @@ class _GroupScreenState extends State<GroupScreen> {
                   if (_roomCodeController.text.trim().isEmpty) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('방 코드를 먼저 입력해 주세요')),
+                      const SnackBar(content: Text('팀 코드를 먼저 입력해 주세요')),
                     );
                     return;
                   }
@@ -499,7 +499,7 @@ class _GroupScreenState extends State<GroupScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '방 코드: ${_roomCodeController.text.trim()}',
+                      '팀 코드: ${_roomCodeController.text.trim()}',
                       style: TextStyle(
                         fontFamily: 'AritaBuri',
                         color: Theme.of(ctx).colorScheme.primary,
@@ -702,7 +702,7 @@ class _GroupScreenState extends State<GroupScreen> {
                             Icon(Icons.music_note, size: 36, color: colorScheme.outline),
                             const SizedBox(height: 6),
                             Text(
-                              '참여 중인 방이 없어요\n팀에서 공유받은 방 코드를 추가해보세요',
+                              '참여 중인 방이 없어요\n팀에서 공유받은 팀 코드를 추가해보세요',
                               style: TextStyle(color: colorScheme.outline, fontSize: 13),
                               textAlign: TextAlign.center,
                             ),
@@ -711,7 +711,7 @@ class _GroupScreenState extends State<GroupScreen> {
                               key: _obAddCodeKey,
                               onPressed: _showAddCodeDialog,
                               icon: const Icon(Icons.add, size: 18),
-                              label: const Text('방 코드 추가'),
+                              label: const Text('팀 코드 추가'),
                             ),
                             const SizedBox(height: 4),
                           ],
@@ -814,7 +814,7 @@ class _GroupScreenState extends State<GroupScreen> {
                     : () {
                         if (_activeCode == null || _activeCode!.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('방 코드를 먼저 추가해 주세요')),
+                            const SnackBar(content: Text('팀 코드를 먼저 추가해 주세요')),
                           );
                           return;
                         }

@@ -34,13 +34,13 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
   @override
   void initState() {
     super.initState();
+    onboardingKeyRegTotal++;
     onboardingKeys['ob_audio_add'] = _obAddKey;
     _load();
   }
 
   @override
   void dispose() {
-    onboardingKeys.remove('ob_audio_add');
     super.dispose();
   }
 

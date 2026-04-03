@@ -43,6 +43,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
+    onboardingKeyRegTotal++;
     onboardingKeys['ob_feed_fab'] = _obFabKey;
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
@@ -68,7 +69,6 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
 
   @override
   void dispose() {
-    onboardingKeys.remove('ob_feed_fab');
     _hidePostMenu();
     _tabController.dispose();
     super.dispose();
