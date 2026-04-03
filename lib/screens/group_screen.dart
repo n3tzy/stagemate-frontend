@@ -77,6 +77,116 @@ class _GroupScreenState extends State<GroupScreen> {
     }
   }
 
+  // ── 방코드 전환/추가/삭제 ──
+  Future<void> _switchCode(String code) async {
+    if (_activeCode == code) return;
+    setState(() => _activeCode = code);
+    _roomCodeController.text = code;
+    await _persistCodes();
+    await _loadAvailability();
+  }
+
+  Future<void> _addCode(String code) async {
+    final trimmed = code.trim();
+    if (trimmed.isEmpty) return;
+    if (_savedCodes.contains(trimmed)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미 추가된 방코드예요.')),
+        );
+      }
+      await _switchCode(trimmed);
+      return;
+    }
+    setState(() => _savedCodes.add(trimmed));
+    await _switchCode(trimmed);
+  }
+
+  Future<void> _deleteCode(String code) async {
+    final idx = _savedCodes.indexOf(code);
+    if (idx < 0) return;
+    setState(() => _savedCodes.removeAt(idx));
+
+    if (_activeCode == code) {
+      String? next;
+      if (_savedCodes.isNotEmpty) {
+        next = _savedCodes[idx > 0 ? idx - 1 : 0];
+      }
+      setState(() => _activeCode = next);
+      _roomCodeController.text = next ?? '';
+    }
+
+    await _persistCodes();
+
+    if (_activeCode != null) {
+      await _loadAvailability();
+    } else {
+      setState(() {
+        _memberSlots = {};
+        _result = null;
+      });
+    }
+  }
+
+  Future<void> _showAddCodeDialog() async {
+    final ctrl = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('방 코드 추가'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '방 코드',
+            hintText: '예: DANCE2026',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.tag),
+          ),
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => Navigator.pop(ctx),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('추가'),
+          ),
+        ],
+      ),
+    );
+    final code = ctrl.text.trim();
+    ctrl.dispose();
+    if (code.isNotEmpty) await _addCode(code);
+  }
+
+  Future<void> _confirmDeleteCode(String code) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('방 코드 삭제'),
+        content: Text('"$code" 를 목록에서 삭제할까요?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) await _deleteCode(code);
+  }
+
   // 내 정보 불러오기
   Future<void> _loadMyInfo() async {
     final name = await ApiClient.getDisplayName();
