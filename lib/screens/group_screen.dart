@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import '../api/api_client.dart';
 
 class GroupScreen extends StatefulWidget {
@@ -10,6 +13,8 @@ class GroupScreen extends StatefulWidget {
 
 class _GroupScreenState extends State<GroupScreen> {
   final _roomCodeController = TextEditingController();
+  List<String> _savedCodes = [];
+  String? _activeCode;
   double _durationNeeded = 2.0;
 
   // DB에서 불러온 데이터
@@ -28,7 +33,48 @@ class _GroupScreenState extends State<GroupScreen> {
   @override
   void initState() {
     super.initState();
-    _loadMyInfo();
+    // _loadCodes 완료 후 _loadMyInfo → _loadMyInfo 내부의 _loadAvailability가
+    // 이미 설정된 _roomCodeController.text 를 사용 (중복 호출 없음)
+    _loadCodes().then((_) => _loadMyInfo());
+  }
+
+  // ── 방코드 로컬 저장 ──
+  Future<File> _codesFile() async {
+    final dir = await getApplicationSupportDirectory();
+    return File('${dir.path}/room_codes.json');
+  }
+
+  Future<void> _persistCodes() async {
+    try {
+      final file = await _codesFile();
+      await file.writeAsString(
+        jsonEncode({'codes': _savedCodes, 'active': _activeCode}),
+        flush: true,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _loadCodes() async {
+    try {
+      final file = await _codesFile();
+      if (!file.existsSync()) return;
+      final raw = await file.readAsString();
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      final codes = (json['codes'] as List?)?.cast<String>() ?? [];
+      final active = json['active'] as String?;
+      final resolved =
+          (active != null && codes.contains(active)) ? active : codes.firstOrNull;
+      setState(() {
+        _savedCodes = codes;
+        _activeCode = resolved;
+      });
+      if (resolved != null) _roomCodeController.text = resolved;
+    } catch (_) {
+      setState(() {
+        _savedCodes = [];
+        _activeCode = null;
+      });
+    }
   }
 
   // 내 정보 불러오기
@@ -42,7 +88,7 @@ class _GroupScreenState extends State<GroupScreen> {
     await _loadAvailability();
   }
 
-  // 방 코드의 가능 시간 불러오기
+  // 방 코드의 연습 가능한 시간대 불러오기
   Future<void> _loadAvailability() async {
     if (_roomCodeController.text.trim().isEmpty) return;
     setState(() => _isLoading = true);
@@ -77,7 +123,7 @@ class _GroupScreenState extends State<GroupScreen> {
         '~${_formatClock((slot['end'] as num).toDouble())}';
   }
 
-  // 내 가능 시간 추가 다이얼로그
+  // 내 연습 가능한 시간대 추가 다이얼로그
   Future<void> _showAddSlotDialog() async {
     int selectedDayIndex = 0;
     double startTime = 14.0;
@@ -89,7 +135,7 @@ class _GroupScreenState extends State<GroupScreen> {
         builder: (ctx, setDialogState) {
           final selectedDay = _days[selectedDayIndex];
           return AlertDialog(
-            title: Text('내 가능 시간 추가\n($_myDisplayName)'),
+            title: Text('내 연습 가능한 시간대 추가\n($_myDisplayName)'),
             content: SizedBox(
               width: double.maxFinite,
               child: SingleChildScrollView(
@@ -100,6 +146,7 @@ class _GroupScreenState extends State<GroupScreen> {
                     Text(
                       '방 코드: ${_roomCodeController.text.trim()}',
                       style: TextStyle(
+                        fontFamily: 'AritaBuri',
                         color: Theme.of(ctx).colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
@@ -322,7 +369,7 @@ class _GroupScreenState extends State<GroupScreen> {
         builder: (ctx, setDialogState) {
           final selectedDay = days[selectedDayIndex];
           return AlertDialog(
-            title: Text('가능 시간 수정\n($_myDisplayName)'),
+            title: Text('연습 가능한 시간대 수정\n($_myDisplayName)'),
             content: SizedBox(
               width: double.maxFinite,
               child: SingleChildScrollView(
@@ -333,6 +380,7 @@ class _GroupScreenState extends State<GroupScreen> {
                     Text(
                       '방 코드: ${_roomCodeController.text.trim()}',
                       style: TextStyle(
+                        fontFamily: 'AritaBuri',
                         color: Theme.of(ctx).colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
@@ -466,7 +514,7 @@ class _GroupScreenState extends State<GroupScreen> {
   Future<void> _findCommonSlots() async {
     if (_memberSlots.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('가능 시간을 먼저 등록해주세요!')),
+        const SnackBar(content: Text('연습 가능한 시간대를 먼저 등록해주세요!')),
       );
       return;
     }
@@ -530,6 +578,7 @@ class _GroupScreenState extends State<GroupScreen> {
                         Expanded(
                           child: TextField(
                             controller: _roomCodeController,
+                            style: const TextStyle(fontFamily: 'AritaBuri'),
                             decoration: const InputDecoration(
                               labelText: '방 코드',
                               hintText: '예: DANCE2026',
@@ -575,7 +624,7 @@ class _GroupScreenState extends State<GroupScreen> {
             ),
             const SizedBox(height: 12),
 
-            // ── 내 가능 시간 추가 버튼 ──
+            // ── 내 연습 가능한 시간대 추가 버튼 ──
             FilledButton.icon(
               onPressed: _isSaving
                   ? null
@@ -589,13 +638,13 @@ class _GroupScreenState extends State<GroupScreen> {
                       _showAddSlotDialog();
                     },
               icon: const Icon(Icons.add),
-              label: Text('내 가능 시간 추가 ($_myDisplayName)'),
+              label: Text('내 연습 가능한 시간대 추가 ($_myDisplayName)'),
             ),
             const SizedBox(height: 16),
 
-            // ── 멤버별 가능 시간 목록 ──
+            // ── 멤버별 연습 가능한 시간대 목록 ──
             Text(
-              '멤버 가능 시간 (${_memberSlots.length}명 등록)',
+              '멤버 연습 가능한 시간대 (${_memberSlots.length}명 등록)',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -614,7 +663,7 @@ class _GroupScreenState extends State<GroupScreen> {
                           size: 48, color: colorScheme.outline),
                       const SizedBox(height: 8),
                       Text(
-                        '아직 등록된 가능 시간이 없어요\n내 가능 시간을 추가해보세요!',
+                        '아직 등록된 시간대가 없어요\n내 연습 가능한 시간대를 추가해보세요!',
                         style: TextStyle(color: colorScheme.outline),
                         textAlign: TextAlign.center,
                       ),
@@ -832,7 +881,7 @@ class _GroupScreenState extends State<GroupScreen> {
                     const Icon(Icons.check_circle, color: Colors.green, size: 18),
                     const SizedBox(width: 6),
                     Text(
-                      '전원 가능 시간 (${(_result!['common_slots'] as List).length}개)',
+                      '전원 연습 가능한 시간대 (${(_result!['common_slots'] as List).length}개)',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.green,
@@ -892,7 +941,7 @@ class _GroupScreenState extends State<GroupScreen> {
                     const Icon(Icons.schedule, color: Colors.orange, size: 18),
                     const SizedBox(width: 6),
                     Text(
-                      '일부 가능 시간 (${(_result!['partial_slots'] as List).length}개)',
+                      '일부 연습 가능한 시간대 (${(_result!['partial_slots'] as List).length}개)',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.orange,
@@ -959,7 +1008,7 @@ class _GroupScreenState extends State<GroupScreen> {
                       const Icon(Icons.sentiment_dissatisfied, size: 48, color: Colors.grey),
                       const SizedBox(height: 8),
                       Text(
-                        '공통 가능 시간이 없어요.\n멤버들의 가능 시간을 다시 확인해주세요!',
+                        '공통 시간대가 없어요.\n멤버들의 연습 가능한 시간대를 다시 확인해주세요!',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onErrorContainer,
                         ),
