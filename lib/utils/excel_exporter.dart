@@ -106,7 +106,8 @@ class ExcelExporter {
 
     final now = DateTime.now();
     final dateStr =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}'
+        '_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
     final fileName = '무대순서_$dateStr.xlsx';
 
     return await saveExcelFile(bytes, fileName);

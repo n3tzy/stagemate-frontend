@@ -94,6 +94,24 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
       if (mounted) {
         setState(() {
           _members = data;
+
+          // 역할 우선순위: 회장 > 임원진 > 일반멤버, 동일 역할 내 가나다순
+          int _roleOrder(String role) {
+            switch (role) {
+              case 'super_admin': return 0;
+              case 'admin':       return 1;
+              default:            return 2;
+            }
+          }
+          _members.sort((a, b) {
+            final ra = _roleOrder(a['role'] as String? ?? 'user');
+            final rb = _roleOrder(b['role'] as String? ?? 'user');
+            if (ra != rb) return ra.compareTo(rb);
+            final na = a['display_name'] as String? ?? '';
+            final nb = b['display_name'] as String? ?? '';
+            return na.compareTo(nb);
+          });
+
           // 현재 유저의 role 파악 (isOwner 판단에 사용)
           final me = _members.firstWhere(
             (m) => m['user_id'] == myId,

@@ -118,6 +118,7 @@ class _SearchScreenState extends State<SearchScreen>
         title: TextField(
           controller: _controller,
           autofocus: true,
+          style: const TextStyle(fontFamily: 'AritaBuri'),
           decoration: InputDecoration(
             hintText: '게시글 검색...',
             border: InputBorder.none,

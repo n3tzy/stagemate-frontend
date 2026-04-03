@@ -102,6 +102,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 // 팀 이름
                 TextField(
                   controller: teamController,
+                  style: const TextStyle(fontFamily: 'AritaBuri'),
                   decoration: const InputDecoration(
                     labelText: '팀 이름',
                     hintText: '예: 팀 블루',

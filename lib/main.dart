@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
       ],
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF7DB96B), // 피스타치오 그린
+          seedColor: const Color(0xFF6750A4), // 퍼플
           brightness: Brightness.light,
         ),
         useMaterial3: true,
@@ -156,6 +156,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFEAE5F5),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

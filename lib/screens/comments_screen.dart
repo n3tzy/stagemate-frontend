@@ -502,7 +502,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                 const SizedBox(height: 2),
                 Text(
                   c['content'] ?? '',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'AritaBuri'),
                 ),
               ],
             ),
@@ -623,7 +623,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                     child: Text(
                       post['content'] as String,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'AritaBuri', height: 1.5),
                     ),
                   ),
                 // Media thumbnails
@@ -756,6 +756,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                       child: TextField(
                         controller: _ctrl,
                         focusNode: _textFocusNode,
+                        style: const TextStyle(fontFamily: 'AritaBuri'),
                         decoration: InputDecoration(
                           hintText: '댓글을 입력하세요...',
                           border: OutlineInputBorder(

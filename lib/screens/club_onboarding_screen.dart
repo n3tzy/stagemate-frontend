@@ -531,6 +531,7 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
             const SizedBox(height: 32),
             TextField(
               controller: _nameController,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               decoration: const InputDecoration(
                 labelText: '동아리 이름',
                 hintText: '예: 댄스팀 GROOVE, 직장인밴드 소울트리, 청소년합창단',

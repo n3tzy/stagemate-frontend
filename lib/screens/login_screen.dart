@@ -694,6 +694,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextField(
                 controller: _displayNameController,
                 focusNode: _displayNameFocus,
+                style: const TextStyle(fontFamily: 'AritaBuri'),
                 onChanged: (_) => setState(() => _displayNameAvailable = null),
                 decoration: InputDecoration(
                   labelText: '닉네임',

@@ -535,7 +535,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
                 post['content'] ?? '',
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14, height: 1.5),
+                style: const TextStyle(fontFamily: 'AritaBuri', fontSize: 14, height: 1.5),
               ),
               if (mediaUrls.isNotEmpty) ...[
                 const SizedBox(height: 8),

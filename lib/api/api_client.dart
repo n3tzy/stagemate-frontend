@@ -663,6 +663,14 @@ class ApiClient {
     return _parseResponse(response);
   }
 
+  static Future<Map<String, dynamic>> toggleNoticeLike(int noticeId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/notices/$noticeId/like'),
+      headers: await _headers(),
+    ).timeout(_timeout);
+    return _parseResponse(response);
+  }
+
   static Future<Map<String, dynamic>> togglePostLike(int postId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/posts/$postId/likes'),

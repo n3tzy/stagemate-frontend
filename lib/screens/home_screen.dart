@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:path_provider/path_provider.dart';
+import '../widgets/spotlight_overlay.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -50,6 +52,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late String _currentRole;
   late String _currentClubName;
   late int _currentClubId;
+  final GlobalKey _navBarKey = GlobalKey();
+  List<GlobalKey> _navItemKeys = [];
+  final ScrollController _navScrollController = ScrollController();
+  bool _showOnboarding = false;
 
   @override
   void initState() {
@@ -89,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _currentRole = matched['role'] as String;
           _buildScreens();
         });
+        _checkOnboarding();
       }
     } else if (widget.clubs.isNotEmpty) {
       final first = widget.clubs[0];
@@ -97,9 +104,44 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _currentClubId = (first['club_id'] as num).toInt();
           _buildScreens();
         });
+        _checkOnboarding();
       }
     }
   }
+
+  /// 온보딩 완료 플래그 파일 경로 (clubId별 고유)
+  Future<File> _onboardingFlagFile(int clubId) async {
+    final dir = await getApplicationSupportDirectory();
+    return File('${dir.path}/onboarding_done_$clubId');
+  }
+
+  Future<void> _checkOnboarding() async {
+    if (_currentClubId == 0) return; // 초기화 전 방어
+    try {
+      final flag = await _onboardingFlagFile(_currentClubId);
+      if (flag.existsSync()) return; // 이미 봤음
+      // 파일 먼저 생성 → 앱 강제종료해도 다시 안 뜸
+      await flag.writeAsString('done', flush: true);
+    } catch (_) {
+      // 파일 접근 실패해도 UX 막지 않도록 계속 진행
+    }
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _showOnboarding = true);
+    });
+  }
+
+  List<String> get _tabKeys => [
+    'notice',
+    'feed',
+    'archive',
+    'challenge',
+    if (_canOptimizeSchedule) 'schedule',
+    'group',
+    'booking',
+    if (_canSubmitAudio) 'audio',
+    if (_canManageClub) 'clubManage',
+  ];
 
   Future<void> _loadNotificationSetting() async {
     final val = await ApiClient.getStoredValue('notifications_enabled');
@@ -111,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _navScrollController.dispose();
     super.dispose();
   }
 
@@ -142,7 +185,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // 역할에 따라 탭 화면 구성 (IndexedStack용 캐시 — 인스턴스 안정성 보장)
   late List<Widget> _screenWidgets;
 
+  void _rebuildNavKeys() {
+    _navItemKeys = List.generate(_destinations.length, (_) => GlobalKey());
+  }
+
   void _buildScreens() {
+    _rebuildNavKeys();
     _screenWidgets = [
       NoticeScreen(key: ValueKey('notice_$_currentClubId')),
       FeedScreen(
@@ -880,6 +928,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return SafeArea(
       top: false,
       child: Container(
+        key: _navBarKey,
         color: colorScheme.surfaceContainer,
         height: 72,
         child: LayoutBuilder(
@@ -889,6 +938,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               .clamp(minItemWidth, double.infinity);
           final totalWidth = itemWidth * destinations.length;
           return SingleChildScrollView(
+            controller: _navScrollController,
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             child: SizedBox(
@@ -905,6 +955,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         color: colorScheme.outlineVariant,
                       ),
                     SizedBox(
+                      key: i < _navItemKeys.length ? _navItemKeys[i] : null,
                       width: itemWidth - (i > 0 ? 1 : 0),
                       child: _buildNavItem(context, i, destinations),
                     ),
@@ -971,7 +1022,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
+    return Stack(
+      children: [
+    Scaffold(
       appBar: AppBar(
         backgroundColor: colorScheme.primaryContainer,
         title: Column(
@@ -1148,6 +1201,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _buildBottomNav(context),
         ],
       ),
+    ),
+    if (_showOnboarding)
+      Positioned.fill(
+        child: SpotlightOverlay(
+          tabKeys: _tabKeys,
+          navItemKeys: _navItemKeys,
+          navScrollController: _navScrollController,
+          role: _currentRole,
+          onDone: () => setState(() => _showOnboarding = false),
+        ),
+      ),
+      ],
     );
   }
 }

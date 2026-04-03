@@ -166,7 +166,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
                               Expanded(
                                 child: Text(
                                   notice['title'],
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: const TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.bold),
                                 ),
                               ),
                               if (hasMedia)
@@ -177,9 +177,23 @@ class _NoticeScreenState extends State<NoticeScreen> {
                                 ),
                             ],
                           ),
-                          subtitle: Text(
-                            '${notice['author']}  ·  ${notice['created_at']}',
-                            style: const TextStyle(fontSize: 12),
+                          subtitle: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${notice['author']}  ·  ${notice['created_at']}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                              if ((notice['like_count'] as int? ?? 0) > 0) ...[
+                                Icon(Icons.favorite, size: 11, color: colorScheme.error),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${notice['like_count']}',
+                                  style: TextStyle(fontSize: 11, color: colorScheme.error),
+                                ),
+                              ],
+                            ],
                           ),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => _openDetail(notice),
@@ -218,6 +232,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
   List<dynamic> _comments = [];
   bool _loading = true;
   bool _submitting = false;
+  bool _liking = false;
   final _ctrl = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -287,6 +302,28 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
           SnackBar(content: Text(friendlyError(e))),
         );
       }
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    if (_liking || _notice == null) return;
+    setState(() => _liking = true);
+    try {
+      final result = await ApiClient.toggleNoticeLike(widget.noticeId);
+      if (mounted) {
+        setState(() {
+          _notice!['is_liked'] = result['liked'];
+          _notice!['like_count'] = result['like_count'];
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyError(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _liking = false);
     }
   }
 
@@ -428,6 +465,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
                               Text(
                                 _notice!['title'] as String? ?? '',
                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                                                            fontFamily: 'AritaBuri',
                                                                             fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -438,6 +476,33 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
                                       color: colorScheme.outline,
                                     ),
                               ),
+                              const SizedBox(height: 12),
+                              GestureDetector(
+                                onTap: _liking ? null : _toggleLike,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      (_notice!['is_liked'] as bool? ?? false)
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      size: 18,
+                                      color: (_notice!['is_liked'] as bool? ?? false)
+                                          ? colorScheme.error
+                                          : colorScheme.outline,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${_notice!['like_count'] as int? ?? 0}',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: (_notice!['is_liked'] as bool? ?? false)
+                                                ? colorScheme.error
+                                                : colorScheme.outline,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -446,7 +511,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                           child: Text(
                             _notice!['content'] as String? ?? '',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.6),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'AritaBuri', height: 1.6),
                           ),
                         ),
                         // 미디어 (있을 때만)
@@ -618,6 +683,7 @@ class _NoticeDetailScreenState extends State<NoticeDetailScreen> {
                 Expanded(
                   child: TextField(
                     controller: _ctrl,
+                    style: const TextStyle(fontFamily: 'AritaBuri'),
                     decoration: InputDecoration(
                       hintText: '댓글을 입력하세요...',
                       border: OutlineInputBorder(
@@ -915,6 +981,7 @@ class _NoticeCreateScreenState extends State<NoticeCreateScreen> {
             // 제목
             TextField(
               controller: _titleCtrl,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               decoration: const InputDecoration(
                 labelText: '제목',
                 hintText: '예: 2026 봄 공연 무대 순서 확정',
@@ -927,6 +994,7 @@ class _NoticeCreateScreenState extends State<NoticeCreateScreen> {
             // 내용
             TextField(
               controller: _contentCtrl,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               decoration: const InputDecoration(
                 labelText: '내용',
                 hintText: '공지 내용을 입력하세요',
@@ -1266,6 +1334,7 @@ class _NoticeEditScreenState extends State<_NoticeEditScreen> {
             children: [
               TextField(
                 controller: _titleCtrl,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               decoration: const InputDecoration(
                 labelText: '제목',
                 border: OutlineInputBorder(),

@@ -69,6 +69,7 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
           children: [
             TextField(
               controller: nameCtrl,
+              style: const TextStyle(fontFamily: 'AritaBuri'),
               decoration: const InputDecoration(
                 labelText: '공연명 *',
                 hintText: '예: 2025 봄 축제',
@@ -1301,6 +1302,7 @@ class _TeamLeaderSubmitSheetState
 
                 TextField(
                   controller: _teamNameCtrl,
+                  style: const TextStyle(fontFamily: 'AritaBuri'),
                   decoration: const InputDecoration(
                     labelText: '팀명 *',
                     hintText: '예: A팀',
@@ -1312,6 +1314,7 @@ class _TeamLeaderSubmitSheetState
                 const SizedBox(height: 12),
                 TextField(
                   controller: _songTitleCtrl,
+                  style: const TextStyle(fontFamily: 'AritaBuri'),
                   decoration: const InputDecoration(
                     labelText: '곡 제목 *',
                     hintText: '예: 불꽃놀이',
