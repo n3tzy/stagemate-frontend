@@ -9,6 +9,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import '../api/api_client.dart';
 import '../utils/file_validator.dart';
+import '../utils/onboarding_keys.dart';
 
 // ── 음원 제출 메인 탭 화면 ──────────────────────────
 class AudioSubmissionScreen extends StatefulWidget {
@@ -28,10 +29,19 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
   bool get _isAdmin =>
       widget.role == 'super_admin' || widget.role == 'admin';
 
+  final _obAddKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
+    onboardingKeys['ob_audio_add'] = _obAddKey;
     _load();
+  }
+
+  @override
+  void dispose() {
+    onboardingKeys.remove('ob_audio_add');
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -293,6 +303,7 @@ class _AudioSubmissionScreenState extends State<AudioSubmissionScreen> {
             ),
       floatingActionButton: _isAdmin
           ? FloatingActionButton.extended(
+              key: _obAddKey,
               onPressed: _showCreatePerformanceDialog,
               icon: const Icon(Icons.add),
               label: const Text('공연 추가'),

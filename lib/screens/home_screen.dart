@@ -1210,6 +1210,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           navScrollController: _navScrollController,
           role: _currentRole,
           onDone: () => setState(() => _showOnboarding = false),
+          onNavigate: (tabIndex) => setState(() => _currentIndex = tabIndex),
         ),
       ),
       ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
+import '../utils/onboarding_keys.dart';
 import '../widgets/youtube_card.dart';
 
 class PerformanceArchiveScreen extends StatefulWidget {
@@ -21,10 +22,19 @@ class _PerformanceArchiveScreenState extends State<PerformanceArchiveScreen> {
   List<dynamic> _archives = [];
   bool _loading = true;
 
+  final _obAddKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
+    onboardingKeys['ob_archive_add'] = _obAddKey;
     _load();
+  }
+
+  @override
+  void dispose() {
+    onboardingKeys.remove('ob_archive_add');
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -118,6 +128,7 @@ class _PerformanceArchiveScreenState extends State<PerformanceArchiveScreen> {
         actions: [
           if (widget.isAdmin)
             IconButton(
+              key: _obAddKey,
               icon: const Icon(Icons.add),
               onPressed: _openAdd,
               tooltip: '공연 기록 추가',

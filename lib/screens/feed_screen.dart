@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../api/api_client.dart';
 import '../utils/file_validator.dart';
+import '../utils/onboarding_keys.dart';
 import '../widgets/media_viewer_screen.dart';
 import '../widgets/youtube_card.dart';
 import 'comments_screen.dart';
@@ -37,9 +38,12 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
   int? _myUserId;
   OverlayEntry? _postMenuOverlay;
 
+  final _obFabKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
+    onboardingKeys['ob_feed_fab'] = _obFabKey;
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) setState(() {});
@@ -64,6 +68,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
 
   @override
   void dispose() {
+    onboardingKeys.remove('ob_feed_fab');
     _hidePostMenu();
     _tabController.dispose();
     super.dispose();
@@ -728,6 +733,7 @@ class _FeedScreenState extends State<FeedScreen> with SingleTickerProviderStateM
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        key: _obFabKey,
         onPressed: () async {
           final result = await Navigator.push<bool>(
             context,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
+import '../utils/onboarding_keys.dart';
 import 'club_profile_sheet.dart';
 import 'subscription_screen.dart';
 
@@ -22,10 +23,22 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
   bool _isLoadingMembers = false;
   String _myRole = 'member';
 
+  final _obPlanKey = GlobalKey();
+  final _obInviteKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
+    onboardingKeys['ob_club_plan'] = _obPlanKey;
+    onboardingKeys['ob_club_invite'] = _obInviteKey;
     _loadAll();
+  }
+
+  @override
+  void dispose() {
+    onboardingKeys.remove('ob_club_plan');
+    onboardingKeys.remove('ob_club_invite');
+    super.dispose();
   }
 
   Future<void> _loadAll() async {
@@ -480,6 +493,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
             // ── 구독 / 플랜 카드 ─────────────────────────
             if (_myRole == 'super_admin')
               Card(
+                key: _obPlanKey,
                 child: ListTile(
                   leading: const Icon(Icons.workspace_premium_outlined),
                   title: const Text('플랜 & 구독'),
@@ -505,6 +519,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> {
             ),
             const SizedBox(height: 8),
             Card(
+              key: _obInviteKey,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: _isLoadingCode

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import '../api/api_client.dart';
+import '../utils/onboarding_keys.dart';
 
 class GroupScreen extends StatefulWidget {
   const GroupScreen({super.key});
@@ -30,12 +31,22 @@ class _GroupScreenState extends State<GroupScreen> {
 
   final List<String> _days = ['월', '화', '수', '목', '금', '토', '일'];
 
+  final _obAddCodeKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
+    onboardingKeys['ob_group_add_code'] = _obAddCodeKey;
     // _loadCodes 완료 후 _loadMyInfo → _loadMyInfo 내부의 _loadAvailability가
     // 이미 설정된 _roomCodeController.text 를 사용 (중복 호출 없음)
     _loadCodes().then((_) => _loadMyInfo());
+  }
+
+  @override
+  void dispose() {
+    onboardingKeys.remove('ob_group_add_code');
+    _roomCodeController.dispose();
+    super.dispose();
   }
 
   // ── 방코드 로컬 저장 ──
@@ -697,6 +708,7 @@ class _GroupScreenState extends State<GroupScreen> {
                             ),
                             const SizedBox(height: 10),
                             FilledButton.icon(
+                              key: _obAddCodeKey,
                               onPressed: _showAddCodeDialog,
                               icon: const Icon(Icons.add, size: 18),
                               label: const Text('방 코드 추가'),
@@ -744,6 +756,7 @@ class _GroupScreenState extends State<GroupScreen> {
                               );
                             }),
                             ActionChip(
+                              key: _obAddCodeKey,
                               avatar: Icon(Icons.add, size: 16, color: colorScheme.outline),
                               label: Text(
                                 '추가',

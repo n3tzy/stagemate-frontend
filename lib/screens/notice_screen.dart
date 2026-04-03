@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import '../api/api_client.dart';
 import '../utils/file_validator.dart';
+import '../utils/onboarding_keys.dart';
 import '../widgets/media_viewer_screen.dart';
 
 // ─── 공지사항 목록 화면 ───────────────────────────────────────────────────────
@@ -24,10 +25,19 @@ class _NoticeScreenState extends State<NoticeScreen> {
   String _myDisplayName = '';
   int _myUserId = 0;
 
+  final _obWriteKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
+    onboardingKeys['ob_notice_write'] = _obWriteKey;
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    onboardingKeys.remove('ob_notice_write');
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -99,6 +109,7 @@ class _NoticeScreenState extends State<NoticeScreen> {
         actions: [
           if (_role == 'admin' || _role == 'super_admin')
             FilledButton.icon(
+              key: _obWriteKey,
               onPressed: _openCreate,
               icon: const Icon(Icons.edit, size: 16),
               label: const Text('작성'),

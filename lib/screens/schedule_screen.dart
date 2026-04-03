@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../utils/excel_exporter.dart';
+import '../utils/onboarding_keys.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -16,6 +17,23 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Map<String, dynamic>? _result;
   bool _isLoading = false;
   int _nextId = 1;
+
+  final _obAddSongKey = GlobalKey();
+  final _obOptimizeKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    onboardingKeys['ob_schedule_add_song'] = _obAddSongKey;
+    onboardingKeys['ob_schedule_optimize'] = _obOptimizeKey;
+  }
+
+  @override
+  void dispose() {
+    onboardingKeys.remove('ob_schedule_add_song');
+    onboardingKeys.remove('ob_schedule_optimize');
+    super.dispose();
+  }
 
   // ── 시간 포맷 ──────────────────────────
   String _formatTime(double minutes) {
@@ -445,6 +463,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       ),
                 ),
                 FilledButton.icon(
+                  key: _obAddSongKey,
                   onPressed: _showAddSongDialog,
                   icon: const Icon(Icons.add),
                   label: const Text('곡 추가'),
@@ -549,6 +568,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
             // ── 최적화 버튼 ──
             FilledButton.icon(
+              key: _obOptimizeKey,
               onPressed: _isLoading ? null : _optimize,
               icon: _isLoading
                   ? const SizedBox(

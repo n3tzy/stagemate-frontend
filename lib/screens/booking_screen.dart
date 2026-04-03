@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
+import '../utils/onboarding_keys.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -14,6 +15,8 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _isLoading = false;
   int? _myUserId;  // 현재 로그인한 유저 ID
   String _role = 'user';  // 예약 생성 권한 체크용
+
+  final _obAddKey = GlobalKey();
 
   // 모든 멤버 예약 가능
   bool get _canCreateBooking => _role.isNotEmpty;
@@ -399,8 +402,15 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   void initState() {
     super.initState();
+    onboardingKeys['ob_booking_add'] = _obAddKey;
     _loadMyInfo();
     _loadBookings();
+  }
+
+  @override
+  void dispose() {
+    onboardingKeys.remove('ob_booking_add');
+    super.dispose();
   }
 
   Future<void> _loadMyInfo() async {
@@ -442,6 +452,7 @@ class _BookingScreenState extends State<BookingScreen> {
             const SizedBox(height: 12),
             if (_canCreateBooking)
               FilledButton.icon(
+                key: _obAddKey,
                 onPressed: _showAddBookingDialog,
                 icon: const Icon(Icons.add),
                 label: const Text('예약 추가하기'),

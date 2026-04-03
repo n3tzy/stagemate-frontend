@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
+import '../utils/onboarding_keys.dart';
 import '../widgets/youtube_card.dart';
 
 class ChallengeScreen extends StatefulWidget {
@@ -23,10 +24,19 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
   Map<String, dynamic>? _data;
   bool _loading = true;
 
+  final _obSubmitKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
+    onboardingKeys['ob_challenge_submit'] = _obSubmitKey;
     _load();
+  }
+
+  @override
+  void dispose() {
+    onboardingKeys.remove('ob_challenge_submit');
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -200,6 +210,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
                   // 참가 버튼 (admin + 미참가)
                   if (widget.isAdmin && !isParticipating)
                     FilledButton.icon(
+                      key: _obSubmitKey,
                       onPressed: _submit,
                       icon: const Icon(Icons.add_circle),
                       label: const Text('우리 동아리 영상 제출하기'),
