@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -43,7 +42,25 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        textTheme: GoogleFonts.notoSerifKrTextTheme(),
+        // 제목: 아리따 부리 / 본문: 이롭게 바탕체
+        fontFamily: 'IropkeBatang',
+        textTheme: const TextTheme(
+          displayLarge:  TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w700),
+          displayMedium: TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w700),
+          displaySmall:  TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
+          headlineLarge: TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w700),
+          headlineMedium:TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
+          headlineSmall: TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
+          titleLarge:    TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
+          titleMedium:   TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w400),
+          titleSmall:    TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w400),
+          bodyLarge:     TextStyle(fontFamily: 'IropkeBatang'),
+          bodyMedium:    TextStyle(fontFamily: 'IropkeBatang'),
+          bodySmall:     TextStyle(fontFamily: 'IropkeBatang'),
+          labelLarge:    TextStyle(fontFamily: 'IropkeBatang'),
+          labelMedium:   TextStyle(fontFamily: 'IropkeBatang'),
+          labelSmall:    TextStyle(fontFamily: 'IropkeBatang'),
+        ),
       ),
       builder: (context, child) {
         // 시스템 글꼴 크기 설정을 그대로 존중 (iOS/Android 접근성)

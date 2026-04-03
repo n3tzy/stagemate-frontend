@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+41
+version: 1.0.0+42
 
 environment:
   sdk: '>=3.4.4 <4.0.0'
@@ -92,10 +92,18 @@ flutter:
     - assets/certs/
 
   fonts:
-    - family: ZenSerif
+    - family: AritaBuri
       fonts:
-        - asset: assets/fonts/ZEN-SERIF-TTF-Regular.ttf
-        - asset: assets/fonts/ZEN-SERIF-Regular.otf
+        - asset: assets/fonts/AritaBuri-Medium.otf
+          weight: 400
+        - asset: assets/fonts/AritaBuri-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/AritaBuri-Bold.otf
+          weight: 700
+    - family: IropkeBatang
+      fonts:
+        - asset: assets/fonts/IropkeBatang-Regular.otf
+          weight: 400
 
 flutter_launcher_icons:
   android: "launcher_icon"
