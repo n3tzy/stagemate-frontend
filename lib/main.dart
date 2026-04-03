@@ -42,24 +42,28 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         useMaterial3: true,
-        // 제목: 아리따 부리 / 본문: 이롭게 바탕체
-        fontFamily: 'IropkeBatang',
+        // UI 크롬(탭·버튼·레이블): ZenSerif (한글은 시스템 폰트 fallback)
+        // 콘텐츠 제목: 아리따 부리 / 콘텐츠 본문: 이롭게 바탕체
+        fontFamily: 'ZenSerif',
         textTheme: const TextTheme(
-          displayLarge:  TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w700),
-          displayMedium: TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w700),
-          displaySmall:  TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
-          headlineLarge: TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w700),
-          headlineMedium:TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
-          headlineSmall: TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
-          titleLarge:    TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
-          titleMedium:   TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w400),
-          titleSmall:    TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w400),
-          bodyLarge:     TextStyle(fontFamily: 'IropkeBatang'),
-          bodyMedium:    TextStyle(fontFamily: 'IropkeBatang'),
-          bodySmall:     TextStyle(fontFamily: 'IropkeBatang'),
-          labelLarge:    TextStyle(fontFamily: 'IropkeBatang'),
-          labelMedium:   TextStyle(fontFamily: 'IropkeBatang'),
-          labelSmall:    TextStyle(fontFamily: 'IropkeBatang'),
+          // 화면 타이틀, 게시글 제목 등 헤드라인 → 아리따 부리
+          displayLarge:   TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w700),
+          displayMedium:  TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w700),
+          displaySmall:   TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
+          headlineLarge:  TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w700),
+          headlineMedium: TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
+          headlineSmall:  TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
+          titleLarge:     TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w600),
+          titleMedium:    TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w400),
+          titleSmall:     TextStyle(fontFamily: 'AritaBuri', fontWeight: FontWeight.w400),
+          // 게시글 내용, 본문 텍스트 → 이롭게 바탕체
+          bodyLarge:      TextStyle(fontFamily: 'IropkeBatang'),
+          bodyMedium:     TextStyle(fontFamily: 'IropkeBatang'),
+          bodySmall:      TextStyle(fontFamily: 'IropkeBatang'),
+          // 버튼·칩·레이블 → ZenSerif (기본값 상속)
+          labelLarge:     TextStyle(fontFamily: 'ZenSerif'),
+          labelMedium:    TextStyle(fontFamily: 'ZenSerif'),
+          labelSmall:     TextStyle(fontFamily: 'ZenSerif'),
         ),
       ),
       builder: (context, child) {
