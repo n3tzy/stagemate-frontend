@@ -326,10 +326,14 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(
-                'assets/images/logo.png',
+              Container(
                 width: 120,
                 height: 120,
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Image.asset('assets/images/logo_preview.png'),
               ),
               const SizedBox(height: 8),
               Text(
