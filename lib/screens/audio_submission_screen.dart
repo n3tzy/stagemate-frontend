@@ -1391,15 +1391,6 @@ class _TeamLeaderSubmitSheetState
                   const SizedBox(height: 8),
                 ],
 
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    '본인이 저작권을 보유한 음원(자작곡, 편곡 등)만 업로드해 주세요.',
-                    style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
                 if (!_isUploading)
                   OutlinedButton.icon(
                     onPressed: _pickFile,
